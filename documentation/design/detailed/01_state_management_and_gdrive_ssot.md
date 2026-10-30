@@ -1,0 +1,454 @@
+# Detailed Design: 01 - Ephemeral State & Google Drive SSOT
+
+## 1. Executive Overview & Scope
+
+The **2026 ML System Design Platform** operates under a strict architectural mandate:
+1. **Zero Permanent Local State**: The client browser shall not persist any user work, credentials, settings, or project artifacts in local disk or browser storage systems (`localStorage`, `sessionStorage`, `IndexedDB`, WebSQL, or local CacheStorage).
+2. **Google Drive as the Single Source of Truth (SSOT)**: Every user workspace, interactive canvas graph, interview rubric, chaos engineering log, custom scenario, and portfolio draft is stored exclusively in the user's personal Google Drive under a dedicated application folder (`/ML_System_Design_2026_SSOT/`).
+3. **Volatile In-Memory Runtime**: During active browser execution, state resides strictly in volatile RAM managed by a modular `Zustand` state container. Closing the browser tab without syncing discards the in-memory delta.
+
+This design draws direct inspiration from the cloud-native ephemeral state patterns established in the `synapse-sync` architectural model, ensuring zero data leakage onto shared workstations, zero local database corruption, and seamless cross-device mobility.
+
+---
+
+## 2. Ephemeral In-Memory State Architecture (Zustand)
+
+### 2.1 State Store Architecture & Slices
+
+The runtime state is modeled as an in-memory Zustand store decomposed into modular slices. The store is initialized upon application launch and destroyed upon page teardown.
+
+```mermaid
+graph TD
+    RootStore["Zustand In-Memory Root Store (RAM Only)"]
+    
+    AuthSlice["Auth & Session Slice\n- OAuth Access Token (In-Memory)\n- Token Expiry & Scopes\n- User Profile"]
+    DriveSyncSlice["GDrive Sync Slice\n- Sync Status (IDLE, DIRTY, SYNCING, ERROR, CONFLICT)\n- Active File IDs & ETags\n- Pending Mutation Queue\n- Last Synced Timestamp"]
+    CanvasSlice["Canvas & Architecture Slice\n- Nodes & Edges (React Flow DAG)\n- Node Hardware Configs\n- Real-Time Trade-Off Matrix\n- Critical Path Latency Cache"]
+    InterviewSlice["Interview Simulator Slice\n- Current Step (1 to 6)\n- Transcripts & Voice Audio Buffers\n- Rubric Scoring History\n- LLM Interviewer State"]
+    ChaosSlice["Chaos Engineering Slice\n- Active Injected Faults\n- Agent Cascading Loop Traces\n- SLA Error Budget Gauge\n- Live Incident Timer"]
+    CurriculumSlice["Curriculum & Learning Slice\n- Module Progress (Modules 1-3)\n- Completed Blueprints & Exercises\n- Earned Badges & Mastery Metrics"]
+    
+    RootStore --> AuthSlice
+    RootStore --> DriveSyncSlice
+    RootStore --> CanvasSlice
+    RootStore --> InterviewSlice
+    RootStore --> ChaosSlice
+    RootStore --> CurriculumSlice
+```
+
+### 2.2 Strict In-Memory Enforcement & Storage Prevention
+
+To guarantee compliance with the zero-local-persistence constraint, the application registers an initialization interceptor that verifies and restricts browser storage APIs:
+
+```typescript
+/**
+ * Storage Guard: Prevents accidental usage of persistent browser storage.
+ * Enforced during bootstrap in both development and production.
+ */
+export class StorageSanitizer {
+  public static enforceZeroLocalPersistence(): void {
+    if (typeof window === 'undefined') return;
+
+    const noopStorage = {
+      getItem: (_key: string) => null,
+      setItem: (_key: string, _value: string) => {
+        console.warn('Persistent storage rejected: Zero Local State enforced by ADR-01.');
+      },
+      removeItem: (_key: string) => {},
+      clear: () => {},
+      length: 0,
+      key: (_index: number) => null,
+    };
+
+    try {
+      Object.defineProperty(window, 'localStorage', { value: noopStorage, configurable: false, writable: false });
+      Object.defineProperty(window, 'sessionStorage', { value: noopStorage, configurable: false, writable: false });
+    } catch (e) {
+      console.warn('Storage overrides restricted by environment sandbox:', e);
+    }
+  }
+}
+```
+
+### 2.3 Unload & Dirty State Protection
+
+When a user introduces mutations into the canvas or completes an interview step, the `DriveSyncSlice` marks the state as `DIRTY`. If the user attempts to close or reload the browser tab before the debounced synchronization finishes, the browser triggers a native `beforeunload` warning dialog:
+
+```typescript
+export function useBeforeUnloadGuard(isDirty: boolean): void {
+  useEffect(() => {
+    const handleBeforeUnload = (event: BeforeUnloadEvent): string | void => {
+      if (!isDirty) return;
+      event.preventDefault();
+      event.returnValue = 'You have unsaved changes. Closing this tab will permanently discard them unless synced to Google Drive.';
+      return event.returnValue;
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [isDirty]);
+}
+```
+
+---
+
+## 3. Google Drive SSOT Storage Model
+
+### 3.1 OAuth2 Scope & Authorization Flow
+
+The application requests the minimal permission scope necessary to interact with its own files:
+- **Scope**: `https://www.googleapis.com/auth/drive.file`
+- **Security Boundary**: The application can **only** read and write files and folders that it creates itself. It possesses zero access to existing user files, photos, personal documents, or spreadsheets in the user's Drive.
+
+#### Authentication Sequence (OAuth2 PKCE Flow)
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor User
+    participant App as Web Client (Next.js)
+    participant Edge as Edge Auth Broker (/api/auth/google)
+    participant GoogleAuth as Google Identity / OAuth2 Server
+    participant GDrive as Google Drive API v3
+
+    User->>App: Clicks "Connect Google Drive"
+    App->>App: Generate PKCE code_verifier & code_challenge (SHA-256)
+    App->>GoogleAuth: Redirect to auth dialog (scope=drive.file, response_type=code, code_challenge)
+    GoogleAuth->>User: Displays consent: "ML System Design 2026 requests access to files it creates"
+    User->>GoogleAuth: Approves consent
+    GoogleAuth->>App: Redirects to /api/auth/google/callback?code=AUTH_CODE
+    App->>Edge: POST /api/auth/google/callback { code, code_verifier }
+    Edge->>GoogleAuth: POST https://oauth2.googleapis.com/token { client_id, code, verifier }
+    GoogleAuth-->>Edge: { access_token, expires_in, refresh_token, token_type: "Bearer" }
+    Edge-->>App: Return in-memory session credentials (RAM only!)
+    App->>GDrive: GET /drive/v3/about?fields=user
+    GDrive-->>App: { user: { displayName, emailAddress, photoLink } }
+    App->>App: Store access_token in AuthSlice (RAM); trigger initial sync
+```
+
+### 3.2 Google Drive Folder & File Hierarchy
+
+The platform isolates all data within a single root folder at the base of the user's Google Drive:
+
+```text
+/ML_System_Design_2026_SSOT/
+├── manifest.json                           # Global registry, active workspace pointers, settings
+├── schemas/
+│   └── custom_scenarios.json               # User-defined plug-and-play scenario plugins
+├── workspaces/
+│   ├── ws_8f1b2c_ecommerce_ranking.json    # Complete serialized architecture canvas
+│   ├── ws_4a9d7e_fraud_detection.json      # Streaming fraud detection workspace
+│   └── ws_1e3f8a_enterprise_rag.json       # Hybrid search RAG workspace
+├── interviews/
+│   ├── iv_session_9201_youtube_rec.json    # 6-step interview transcripts, audio notes, rubrics
+│   └── iv_session_8812_ad_click_pred.json  # Candidate interview evaluation record
+├── chaos_telemetry/
+│   ├── chaos_run_551_cascade_logs.json     # Agent cascading loop traces & circuit breaker runs
+│   └── incident_roulette_history.json      # Incident roulette performance records
+└── llm_exchange_vault/
+    ├── exports/                            # Exported JSON prompt bundles for manual execution
+    │   └── prompt_AI_INTERVIEW_20261030.json
+    └── imports/                            # Verified imported LLM response envelopes
+        └── response_AI_INTERVIEW_20261030.json
+```
+
+### 3.3 Core Manifest JSON Schema (`manifest.json`)
+
+The `manifest.json` file serves as the directory catalog and root index for the user's entire platform footprint:
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "PlatformManifest",
+  "type": "object",
+  "required": ["version", "updatedAt", "activeWorkspaceId", "userPreferences", "curriculumProgress", "workspaces"],
+  "properties": {
+    "version": { "type": "string", "const": "2026.1.0" },
+    "updatedAt": { "type": "string", "format": "date-time" },
+    "activeWorkspaceId": { "type": "string", "format": "uuid" },
+    "userPreferences": {
+      "type": "object",
+      "required": ["highContrastMode", "telemetryFpsCap", "autoSaveDebounceMs", "preferredHardwareVendor", "aiExchangeMode"],
+      "properties": {
+        "highContrastMode": { "type": "boolean", "default": false },
+        "telemetryFpsCap": { "type": "integer", "enum": [30, 60], "default": 60 },
+        "autoSaveDebounceMs": { "type": "integer", "default": 1500 },
+        "preferredHardwareVendor": { "type": "string", "enum": ["NVIDIA", "GOOGLE_TPU", "AMD"], "default": "NVIDIA" },
+        "aiExchangeMode": { "type": "string", "enum": ["DIRECT_API", "MANUAL_IMPORT_EXPORT"], "default": "DIRECT_API" }
+      }
+    },
+    "curriculumProgress": {
+      "type": "object",
+      "required": ["module1Completed", "module2Completed", "module3Completed", "completedExerciseIds"],
+      "properties": {
+        "module1Completed": { "type": "boolean" },
+        "module2Completed": { "type": "boolean" },
+        "module3Completed": { "type": "boolean" },
+        "completedExerciseIds": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "workspaces": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["workspaceId", "name", "category", "fileId", "lastModified", "etag"],
+        "properties": {
+          "workspaceId": { "type": "string", "format": "uuid" },
+          "name": { "type": "string" },
+          "category": { "type": "string" },
+          "fileId": { "type": "string" },
+          "lastModified": { "type": "string", "format": "date-time" },
+          "etag": { "type": "string" }
+        }
+      }
+    }
+  }
+}
+```
+
+---
+
+## 4. Synchronization Protocol & Conflict Resolution Engine
+
+### 4.1 Debounced Mutation Pipeline
+
+To prevent throttling from the Google Drive REST API ($10\text{ requests/sec/user}$ rate limits), mutations triggered by user actions (dragging nodes, editing edge weights, altering quantization levels) are batched through a sliding debounce window:
+
+```mermaid
+stateDiagram-v2
+    [*] --> Idle
+    Idle --> Dirty: User mutates Canvas / UI in RAM
+    Dirty --> Waiting: Start Debounce Timer (1500ms)
+    Waiting --> Waiting: New mutation arrives (Reset 1500ms Timer)
+    Waiting --> Syncing: Timer fires OR User hits Cmd+S
+    Syncing --> Idle: Drive API returns 200 OK (etag updated)
+    Syncing --> Conflict: Drive API returns 412 Precondition Failed
+    Conflict --> ResolveModal: Present 3-Way Merge / Diff Dialog to User
+    ResolveModal --> Syncing: User accepts resolution -> Overwrite with merged state
+    Syncing --> Error: Network Timeout / 5xx Error
+    Error --> OfflineQueue: Queue mutation in RAM; retry with exponential backoff
+    OfflineQueue --> Syncing: Network restored
+```
+
+### 4.2 Optimistic In-Memory Updates & Conditional Writes (`If-Match`)
+
+Every file synchronized with Google Drive tracks its remote `ETag` and `modifiedTime`. Writes use conditional HTTP headers to prevent accidental overwrites if the user has multiple browser tabs or devices open simultaneously:
+
+```typescript
+export class GDriveSyncClient {
+  private readonly baseUrl = 'https://www.googleapis.com';
+
+  /**
+   * Updates an existing workspace file conditionally.
+   * If the remote file changed since last read, Google Drive returns 412 Precondition Failed.
+   */
+  public async updateWorkspaceFile(
+    accessToken: string,
+    fileId: string,
+    currentEtag: string,
+    payload: Record<string, unknown>
+  ): Promise<{ newEtag: string; modifiedTime: string }> {
+    const serializedBody = JSON.stringify(payload, null, 2);
+
+    const response = await fetch(
+      `${this.baseUrl}/upload/drive/v3/files/${fileId}?uploadType=media`,
+      {
+        method: 'PATCH',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+          'If-Match': currentEtag, // Prevents silent overwrite conflicts
+        },
+        body: serializedBody,
+      }
+    );
+
+    if (response.status === 412) {
+      throw new GDriveConflictError(`Conflict detected for file ${fileId}. Remote ETag does not match ${currentEtag}`);
+    }
+
+    if (!response.ok) {
+      throw new GDriveSyncError(`Failed to update file ${fileId}: ${response.status} ${response.statusText}`);
+    }
+
+    const result = await response.json();
+    return {
+      newEtag: response.headers.get('ETag') || result.etag,
+      modifiedTime: result.modifiedTime,
+    };
+  }
+}
+```
+
+### 4.3 Three-Way Conflict Resolution Protocol
+
+When a `412 Precondition Failed` error occurs, the platform initiates a 3-way merge algorithm:
+- **Base Version ($V_{\text{base}}$)**: The state when the file was originally hydrated into RAM.
+- **Local Version ($V_{\text{local}}$)**: The modified in-memory state with the user's uncommitted edits.
+- **Remote Version ($V_{\text{remote}}$)**: The current version fetched directly from Google Drive.
+
+```mermaid
+flowchart TD
+    DetectConflict["Google Drive Returns 412 Precondition Failed"] --> FetchRemote["Fetch Latest Remote File from Drive (V_remote)"]
+    FetchRemote --> DiffNodes["Diff Node & Edge Sets against Base (V_base)"]
+    
+    DiffNodes --> AutoMergeCheck{"Can changes be merged non-destructively?\n(e.g., disjoint node modifications)"}
+    
+    AutoMergeCheck -- "Yes (Disjoint Changes)" --> Apply3Way["Synthesize Merged AST\nV_merged = V_remote + Local_Disjoint_Deltas"]
+    Apply3Way --> WriteBack["Write V_merged to Drive with Remote ETag"]
+    WriteBack --> NotifyUser["Display Toast: 'Background changes merged automatically'"]
+
+    AutoMergeCheck -- "No (Conflicting Node Attributes)" --> ShowModal["Prompt User Conflict Resolution Modal"]
+    ShowModal --> Choice1["Option A: Keep My In-Memory Version (Force Overwrite)"]
+    ShowModal --> Choice2["Option B: Discard Local & Reload Remote Version"]
+    ShowModal --> Choice3["Option C: Interactive Side-by-Side Node Diff Picker"]
+
+    Choice1 --> ForceWrite["PATCH to Drive with If-Match: * (Wildcard)"]
+    Choice2 --> RehydrateRAM["Overwrite RAM Store with V_remote"]
+    Choice3 --> UserPicks["User selects node by node -> Form new state"]
+    UserPicks --> ForceWrite
+```
+
+---
+
+## 5. Network Drop & Offline Resilience
+
+If the user loses internet connectivity while working:
+1. **Zero Disruption to Compute**: Web Workers, Pyodide WASM, and React Flow continue executing at full speed without network dependencies.
+2. **RAM Queueing**: All state mutations are appended to an in-memory chronological replay log (`mutationQueue`).
+3. **Visual Connectivity Indicator**:
+   - `Green`: Connected & Synced (showing seconds since last save).
+   - `Yellow (Pulsing)`: Local Changes Pending Sync.
+   - `Red (Alert)`: Offline — $N$ Changes Buffered in Memory. *Warning: Do not refresh the page.*
+4. **Automatic Reconnection Flush**: When the browser fires the `window.online` event, the sync manager initiates a heartbeat check to Google Drive, fetches the remote file's current ETag, and safely flushes the buffered `mutationQueue`.
+
+---
+
+## 6. Security, Tokens & Privacy Controls
+
+1. **Token Lifecycle in Volatile Memory**:
+   - OAuth access tokens and refresh tokens are kept strictly in JavaScript closure variables within the `AuthSlice`.
+   - Never placed in cookies, `sessionStorage`, `localStorage`, or URL query parameters.
+   - If the user reloads the page, they re-authenticate via the silent GIS (Google Identity Services) iframe or click "Reconnect".
+2. **Data Isolation**:
+   - The user's Google Drive acts as a private, sovereign data store.
+   - The platform servers (whether running on Localhost or Vercel Edge) never store or log user architectures, prompts, trade-off matrices, or code snippets. All API requests to Google Drive are made directly from the user's browser client to Google's public endpoints.
+3. **Data Portability**:
+   - Because all files are stored as plain JSON in the user's `/ML_System_Design_2026_SSOT/` directory, users can download, backup, or inspect their files directly from drive.google.com at any time.
+
+---
+
+## 7. Synapse-Sync Architectural Comparison
+
+| Architectural Feature | Synapse-Sync Paradigm | 2026 ML System Design Platform |
+| :--- | :--- | :--- |
+| **Local Storage Policy** | Prohibited | Strictly Prohibited (Enforced via runtime sanitizer) |
+| **Persistence Target** | Google Drive `appDataFolder` / Custom Folder | Dedicated `/ML_System_Design_2026_SSOT/` User Root Directory |
+| **State Container** | Reactive Observable Store | In-Memory `Zustand` with Comlink Web Worker Bridge |
+| **Sync Debounce Window** | 2000 ms sliding window | 1500 ms sliding window + Explicit `Cmd/Ctrl+S` override |
+| **Conflict Handling** | Last-Write-Wins with revision counters | Conditional HTTP `If-Match` ETags with 3-Way AST Merge |
+| **LLM Exchange Vault** | N/A | Dedicated `/llm_exchange_vault/` directory for offline prompt/response files |
+
+---
+
+## 8. Implementation Code Architecture
+
+The following TypeScript definitions govern the Google Drive synchronization engine:
+
+```typescript
+// src/core/gdrive/drive-types.ts
+
+export interface GDriveFileMetadata {
+  id: string;
+  name: string;
+  mimeType: string;
+  parents?: string[];
+  etag: string;
+  modifiedTime: string;
+}
+
+export interface WorkspaceDocument<T = unknown> {
+  schemaVersion: '2026.1.0';
+  workspaceId: string;
+  name: string;
+  category: 'SANDBOX' | 'INTERVIEW' | 'CHAOS' | 'FINOPS' | 'CURRICULUM';
+  createdAt: string;
+  updatedAt: string;
+  data: T;
+}
+
+export interface SyncState {
+  status: 'IDLE' | 'DIRTY' | 'SYNCING' | 'CONFLICT' | 'OFFLINE';
+  lastSyncedAt: string | null;
+  activeWorkspaceId: string | null;
+  activeFileId: string | null;
+  activeEtag: string | null;
+  pendingMutationCount: number;
+}
+```
+
+```typescript
+// src/core/state/slices/createDriveSyncSlice.ts
+
+import { StateCreator } from 'zustand';
+import { SyncState, WorkspaceDocument } from '../../gdrive/drive-types';
+
+export interface DriveSyncSlice {
+  syncState: SyncState;
+  markDirty: () => void;
+  triggerSync: () => Promise<void>;
+  setWorkspace: (workspaceId: string, fileId: string, etag: string) => void;
+  resolveConflict: (strategy: 'OVERWRITE_REMOTE' | 'RELOAD_REMOTE' | 'MERGE', mergedData?: unknown) => Promise<void>;
+}
+
+export const createDriveSyncSlice: StateCreator<DriveSyncSlice> = (set, get) => ({
+  syncState: {
+    status: 'IDLE',
+    lastSyncedAt: null,
+    activeWorkspaceId: null,
+    activeFileId: null,
+    activeEtag: null,
+    pendingMutationCount: 0,
+  },
+
+  markDirty: () => {
+    set((state) => ({
+      syncState: {
+        ...state.syncState,
+        status: 'DIRTY',
+        pendingMutationCount: state.syncState.pendingMutationCount + 1,
+      },
+    }));
+  },
+
+  triggerSync: async () => {
+    // Debounced network dispatch implemented in sync-manager.ts
+  },
+
+  setWorkspace: (workspaceId, fileId, etag) => {
+    set({
+      syncState: {
+        status: 'IDLE',
+        lastSyncedAt: new Date().toISOString(),
+        activeWorkspaceId: workspaceId,
+        activeFileId: fileId,
+        activeEtag: etag,
+        pendingMutationCount: 0,
+      },
+    });
+  },
+
+  resolveConflict: async (_strategy, _mergedData) => {
+    // 3-way conflict resolution dispatch
+  },
+});
+```
+
+---
+
+## 9. Next Steps
+
+- Proceed to [02_dual_mode_ai_gateway_and_exchange_spec.md](file:///home/somesh/git_repos/ml-sys-design/documentation/design/detailed/02_dual_mode_ai_gateway_and_exchange_spec.md) for the complete JSON Schema exchange contract, air-gap manual export/import protocols, and Gemini Free Tier resilience patterns.
