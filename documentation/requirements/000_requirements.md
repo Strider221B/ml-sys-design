@@ -117,4 +117,8 @@ Simple Correlation A/B Testing	Causal Inference & CUPED Systems	Uncovering true 
 * Deterministic Simulation Engine: The back-end must accurately calculate real-world hardware costs, latency impacts, and failure probabilities based on empirical 2026 infrastructure benchmarks.
 * Interactive Visual Profiler: Complex performance telemetry (e.g., flame graphs of memory usage, attention heads, or streaming data queues) must render seamlessly at 60 frames per second on mobile or desktop devices.
 * Plug-and-Play Scenarios: The learning modules must follow an open-ended schema (YAML/JSON) allowing rapid deployment of new, real-world tech stack failures as they happen in the industry.
+* We only have access to Gemini free tier who APIs can be unreliable. Have a provision to export prompts and requirements for individual use-cases (like specific challenge problem in Interactive Case-Study Library) and then have a mechanism to import and save it. Specify the expected format like json etc. Do this for all modules. The provision to do this via direct api calls will also be present.
+* The app state needs to be synced to Google Drive. That will be the single source of truth. There will be no permanent state locally.
+You may refer design of synapse-sync app on how google drive state was managed: ./../synapse-sync/documentation/design/high_level/
+* The app will finally be hosted on local machine as well as vercel.
 
