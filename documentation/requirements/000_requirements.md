@@ -121,4 +121,3 @@ Simple Correlation A/B Testing	Causal Inference & CUPED Systems	Uncovering true 
 * The app state needs to be synced to Google Drive. That will be the single source of truth. There will be no permanent state locally.
 You may refer design of synapse-sync app on how google drive state was managed: ./../synapse-sync/documentation/design/high_level/
 * The app will finally be hosted on local machine as well as vercel.
-
