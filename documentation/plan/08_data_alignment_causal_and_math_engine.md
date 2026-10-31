@@ -15,8 +15,9 @@
 Implement the browser-based scientific computation layer using **Pyodide WebAssembly (WASM)** and strict-OOP Python 3.13 classes, enabling users to test mathematical reward functions, uncover reward hacking, validate causal DAG d-separation, run CUPED variance reduction, and detect dataset contamination with MinHash LSH.
 
 ### Core Deliverables
-1. **Pyodide Web Worker Runtime (`PyodideSandboxWorker`)**:
-   - In-browser Python 3.12/3.13 WASM execution engine isolated in a Web Worker, pre-loading `numpy` and `scipy`.
+1. **Pyodide Web Worker Runtime (`PyodideSandboxWorker`, `PyodideWorkerClient`)**:
+   - In-browser Python 3.13 WASM execution engine isolated in a Web Worker, pre-loading `numpy` 2.0 (SIMD vectorized) and `scipy` 1.14.
+   - Native ES module Web Worker bundling powered by Next.js 16.4 (`new Worker(new URL('...', import.meta.url), { type: 'module' })`).
 2. **Reward Function Sandbox & Goodhart's Law Detector (`RewardSimulator`)**:
    - Executes user-authored Python reward functions against a simulated population of 1,000 synthetic agent candidates.
    - Detects reward hacking traps: length exploitation, sycophancy, repetitive token loops, and safety constraint evasion.
@@ -24,7 +25,7 @@ Implement the browser-based scientific computation layer using **Pyodide WebAsse
    - Computes Pareto frontiers balancing conflicting metrics (user engagement vs toxicity minimization vs compute cost).
 4. **Causal Inference & Counterfactual Lab (`CausalInferenceEngine`)**:
    - Validates DAG d-separation to identify confounding variables and colliders.
-   - Implements **CUPED (Controlled-experiment Using Pre-Experiment Data)** variance reduction ($\hat{\theta} = \frac{\operatorname{Cov}(Y, X)}{\operatorname{Var}(X)}$) and Average Treatment Effect (ATE).
+   - Implements **CUPED (Controlled-experiment Using Pre-Experiment Data)** variance reduction ($\hat{\theta} = \frac{\operatorname{Cov}(Y, X)}{\operatorname{Var}(X)}$) using NumPy 2.0 array operations, and Average Treatment Effect (ATE).
 5. **Data Archaeology & Contamination Auditing Suite (`MinHashAuditor`, `InformationDensityFilter`)**:
    - Detects test set leakage using 128-permutation MinHash LSH indexing.
    - Calculates Shannon entropy and n-gram frequency to prune low-density synthetic training batches.
@@ -37,11 +38,12 @@ Implement the browser-based scientific computation layer using **Pyodide WebAsse
 
 | File Path | Primary Class | Responsibility | Est. Lines |
 | :--- | :--- | :--- | :--- |
-| `src/workers/pyodide/math_sandbox.py` | `MathSandbox` | Python scientific calculator (CUPED, entropy, ATE) | ~180 |
+| `src/workers/pyodide/math_sandbox.py` | `MathSandbox` | Python scientific calculator (CUPED, entropy, ATE) via NumPy 2.0 | ~180 |
 | `src/workers/pyodide/reward_simulator.py` | `RewardSimulator` | 1,000-agent trajectory simulation and Goodhart hacking detector | ~210 |
 | `src/workers/pyodide/causal_inference.py` | `CausalInferenceEngine` | DAG d-separation and backdoor criterion validator | ~190 |
 | `src/workers/pyodide/minhash_auditor.py` | `MinHashAuditor` | 128-hash MinHash LSH test-set contamination scanner | ~170 |
 | `src/workers/pyodide_sandbox_worker.ts` | `PyodideSandboxWorker` | Comlink Web Worker managing Pyodide WASM lifecycle | ~220 |
+| `src/workers/pyodide_worker_client.ts` | `PyodideWorkerClient` | Next.js 16.4 native ES module worker instantiator and Comlink client | ~110 |
 | `src/core/math/pareto_optimizer.ts` | `ParetoOptimizer` | Pareto frontier calculation for multi-objective trade-offs | ~160 |
 | `src/core/data_alignment/hitl_workflow_designer.ts` | `HitlWorkflowDesigner` | Active learning human-in-the-loop queue model | ~150 |
 | `src/core/math/pyodide_constants.ts` | `PyodideConstants` | Constants for Pyodide CDN URLs, package names, default agent populations | ~70 |
@@ -89,13 +91,16 @@ Implement the browser-based scientific computation layer using **Pyodide WebAsse
   - Public method: `scan_contamination(train_corpus: list[str], test_corpus: list[str]) -> list[dict[str, Any]]`
   - Computes 128 hash signatures per document to detect leaked test prompts in training sets.
 
-### Step 5: Implement Pyodide Web Worker & TypeScript Controller
+### Step 5: Implement Pyodide Web Worker & Next.js 16.4 Worker Client
 - File: `src/workers/pyodide_sandbox_worker.ts`
 - Class: `PyodideSandboxWorker`
   - Comlink-exposed class loading Pyodide from CDN:
     `importScripts('https://cdn.jsdelivr.net/pyodide/v0.26.1/full/pyodide.js')`.
-  - Pre-loads `numpy` and `scipy`.
-  - Exposes RPC methods: `runCuped()`, `runRewardSimulation()`, `runCausalD分離()`, `runMinHashScan()`.
+  - Pre-loads `numpy` 2.0 and `scipy` 1.14.
+  - Exposes RPC methods: `runCuped()`, `runRewardSimulation()`, `runCausalDSeparation()`, `runMinHashScan()`.
+- File: `src/workers/pyodide_worker_client.ts`
+- Class: `PyodideWorkerClient`
+  - Manages Next.js 16.4 native ES module worker loading via `new Worker(new URL('./pyodide_sandbox_worker.ts', import.meta.url), { type: 'module' })` with Comlink RPC.
 
 ---
 
@@ -195,6 +200,7 @@ npm run test:cov
 - [ ] Implement `CausalInferenceEngine` in `src/workers/pyodide/causal_inference.py`.
 - [ ] Implement `MinHashAuditor` in `src/workers/pyodide/minhash_auditor.py`.
 - [ ] Implement `PyodideSandboxWorker` in `src/workers/pyodide_sandbox_worker.ts`.
+- [ ] Implement `PyodideWorkerClient` in `src/workers/pyodide_worker_client.ts`.
 - [ ] Implement `ParetoOptimizer` in `src/core/math/pareto_optimizer.ts`.
 - [ ] Implement `HitlWorkflowDesigner` in `src/core/data_alignment/hitl_workflow_designer.ts`.
 - [ ] Write all 6 comprehensive test suites ensuring $\ge 90\%$ branch coverage.

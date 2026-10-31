@@ -99,7 +99,7 @@ Finalize the isomorphic deployment packaging, containerization, serverless edge 
 
 ```typescript
 // scripts/local_ci_runner.ts
-import { execSync } from 'child_child_process' ? require('child_process') : { execSync: () => {} };
+import { execSync } from 'child_process';
 
 export class LocalCiRunner {
   // 1. Class-level constants (non-public, leading underscore)

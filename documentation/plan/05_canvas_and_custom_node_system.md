@@ -44,17 +44,20 @@ Implement the platform's visual presentation core: the **Interactive Architectur
 
 | File Path | Primary Class | Responsibility | Est. Lines |
 | :--- | :--- | :--- | :--- |
-| `src/components/canvas/architecture_canvas.tsx` | `ArchitectureCanvas` | React component managing React Flow canvas, zoom, and interactions | ~230 |
+| `src/components/canvas/architecture_canvas.tsx` | `ArchitectureCanvas` | React component managing `@xyflow/react` 12.12 canvas, subflows, and interaction | ~230 |
 | `src/components/canvas/graph_topology_validator.ts` | `GraphTopologyValidator` | Kahn's algorithm DAG cycle detection and connection validation | ~160 |
 | `src/components/canvas/canvas_keyboard_navigator.ts` | `CanvasKeyboardNavigator` | Keyboard navigation and focus manager complying with WCAG 2.1 | ~190 |
 | `src/components/canvas/aria_live_announcer.ts` | `AriaLiveAnnouncer` | Screen reader audio and live region publisher | ~120 |
 | `src/components/canvas/template_catalog.ts` | `TemplateCatalog` | Factory loading Multi-Agent, RAG, and Guardrail blueprints | ~180 |
-| `src/components/canvas/nodes/inference_gateway_node.tsx` | `InferenceGatewayNode` | Visual component for Gateway infrastructure block | ~140 |
-| `src/components/canvas/nodes/model_worker_node.tsx` | `ModelWorkerNode` | Visual component for vLLM / TensorRT compute block | ~160 |
-| `src/components/canvas/nodes/vector_database_node.tsx` | `VectorDatabaseNode` | Visual component for Vector Database block | ~140 |
-| `src/components/canvas/nodes/feature_store_node.tsx` | `FeatureStoreNode` | Visual component for Feature Store block | ~130 |
+| `src/components/canvas/edges/interactive_infra_edge.tsx` | `InteractiveInfraEdge` | `<BaseEdge>` + `<EdgeLabelRenderer>` wire badges & inline chaos fault trigger | ~140 |
+| `src/components/canvas/nodes/inference_gateway_node.tsx` | `InferenceGatewayNode` | Gateway infrastructure block with reactive `useNodesData` bindings | ~140 |
+| `src/components/canvas/nodes/model_worker_node.tsx` | `ModelWorkerNode` | vLLM / TensorRT compute block with `<NodeResizer>` expansion | ~160 |
+| `src/components/canvas/nodes/vector_database_node.tsx` | `VectorDatabaseNode` | Vector Database block with memory footprint and recall badges | ~140 |
+| `src/components/canvas/nodes/feature_store_node.tsx` | `FeatureStoreNode` | Feature Store block with online p99 read latencies | ~130 |
 | `src/components/canvas/nodes/agent_supervisor_node.tsx` | `AgentSupervisorNode` | Visual component for Agent Supervisor block | ~140 |
 | `src/components/canvas/nodes/semantic_guardrail_node.tsx` | `SemanticGuardrailNode` | Visual component for Safety Guardrail block | ~130 |
+| `src/components/canvas/subflows/agent_swarm_group_node.tsx` | `AgentSwarmGroupNode` | Hierarchical subflow container (`parentId`, `extent: 'parent'`) for multi-agents | ~140 |
+| `src/components/canvas/subflows/vllm_cluster_group_node.tsx` | `VllmClusterGroupNode` | Hierarchical subflow container for distributed GPU worker replicas | ~140 |
 | `src/components/canvas/canvas_constants.ts` | `CanvasConstants` | Layout constants, handle IDs, colors, accessible aria labels | ~80 |
 
 ---
@@ -70,15 +73,25 @@ Implement the platform's visual presentation core: the **Interactive Architectur
     - If processed count $\ne$ total nodes, cycle detected.
   - Public method: `validateGraph(nodes: CanvasNode[], edges: CanvasEdge[]): ValidationResult`
   - Public method: `canConnect(sourceType: string, targetType: string): boolean`
+  - Supports live connection validation used by `@xyflow/react`'s `useConnection()` (providing emerald glow for compatible tensor shapes and vermilion warning for incompatible links).
   - Method bodies strictly $\le 20$ lines (split into `_calculateInDegrees()`, `_processQueue()`, `_checkTypeCompatibility()`).
 
-### Step 2: Implement Custom Infrastructure Nodes
-- Files in `src/components/canvas/nodes/`:
-  - Each node class/component wraps the React Flow node interface.
-  - Features high-contrast borders, status badges (e.g. latency, GPU utilization), and accessible ARIA attributes.
+### Step 2: Implement Custom Infrastructure Nodes & Hierarchical Subflows
+- Files in `src/components/canvas/nodes/` and `src/components/canvas/subflows/`:
+  - Each node wraps `@xyflow/react` node props and utilizes `useNodesData<T>()` to subscribe directly to connected upstream node data in $<5\text{ ms}$ without full canvas re-renders.
+  - Telemetry-heavy nodes (e.g. `ModelWorkerNode`) integrate `<NodeResizer>` / `<NodeResizeControl>` to expand embedded flame graphs and memory fragmentation charts.
+  - Subflow nodes (`AgentSwarmGroupNode`, `VllmClusterGroupNode`) support nested child node containment using `parentId` and `extent: 'parent'`.
+  - Features high-contrast borders, WCAG 2.1 color palettes (`colorMode="system" | "dark" | "light"`), and accessible ARIA attributes.
   - Method/function bodies strictly $\le 20$ lines.
 
-### Step 3: Implement WCAG 2.1 AA/AAA Accessibility Engine
+### Step 3: Implement Interactive Edge Overlays (`InteractiveInfraEdge`)
+- File: `src/components/canvas/edges/interactive_infra_edge.tsx`
+- Component / Class: `InteractiveInfraEdge`
+  - Leverages `@xyflow/react` `<BaseEdge>` and `<EdgeLabelRenderer>` HTML portals.
+  - Renders cable latency badges (`gRPC (0.3ms)`), bandwidth utilization bars, and an interactive **"Inject Chaos Fault"** button directly on the cable without SVG text measurement performance penalties.
+  - Dispatches fault injection actions to the chaos engineering engine upon click.
+
+### Step 4: Implement WCAG 2.1 AA/AAA Accessibility Engine
 - File: `src/components/canvas/canvas_keyboard_navigator.ts`
 - Class: `CanvasKeyboardNavigator`
   - Handles `keydown` events:
@@ -92,7 +105,7 @@ Implement the platform's visual presentation core: the **Interactive Architectur
   - Public method: `announce(message: string, politeness?: 'polite' | 'assertive'): void`
   - Announces node selections, graph validation errors, and updated simulation metrics to screen readers.
 
-### Step 4: Implement Pre-Built Architecture Templates Catalog
+### Step 5: Implement Pre-Built Architecture Templates Catalog
 - File: `src/components/canvas/template_catalog.ts`
 - Class: `TemplateCatalog`
   - Public method: `getTemplate(templateId: string): ArchitectureTemplate`
@@ -101,10 +114,11 @@ Implement the platform's visual presentation core: the **Interactive Architectur
     2. `HYBRID_SEARCH_RAG`: Query Router + BM25 Shard + Vector DB + Cross-Encoder Ranker.
     3. `LLM_GUARDRAIL_ROUTING`: Ingress Gateway + Semantic Classifier + vLLM Node.
 
-### Step 5: Implement Architecture Canvas Component
+### Step 6: Implement Architecture Canvas Component
 - File: `src/components/canvas/architecture_canvas.tsx`
 - Class / Component: `ArchitectureCanvas`
-  - Integrates React Flow with custom node registration (`nodeTypes`).
+  - Integrates `@xyflow/react` with custom node registration (`nodeTypes`) and custom edge registration (`edgeTypes`).
+  - Sets `colorMode="system"` for native dark/light/system theme adaptation.
   - Connects canvas change callbacks (`onNodesChange`, `onEdgesChange`, `onConnect`) to `WorkspaceStore`.
   - Dispatches graph deltas to `SimWorkerController` maintaining $<100\text{ ms}$ feedback.
 
@@ -173,11 +187,13 @@ export class GraphTopologyValidator {
 ## 5. Verification & Testing Requirements
 
 ### Test Files to Create
-- `tests/components/canvas/test_graph_topology_validator.test.ts`: Tests acyclic DAGs, cycle detection, and self-loops.
+- `tests/components/canvas/test_graph_topology_validator.test.ts`: Tests acyclic DAGs, cycle detection, live connection validation, and self-loops.
+- `tests/components/canvas/test_interactive_infra_edge.test.tsx`: Tests `<BaseEdge>` path rendering, `<EdgeLabelRenderer>` portal badges, and fault injection click callbacks.
+- `tests/components/canvas/test_canvas_subflows.test.tsx`: Tests nested child nodes within `AgentSwarmGroupNode` and `VllmClusterGroupNode` (`parentId`, bounds clamping).
 - `tests/components/canvas/test_canvas_keyboard_navigator.test.ts`: Simulates Arrow keys, Tab, Enter, and Delete key events.
 - `tests/components/canvas/test_aria_live_announcer.test.ts`: Tests screen reader message dispatch.
 - `tests/components/canvas/test_template_catalog.test.ts`: Verifies validity and completeness of the 3 templates.
-- `tests/components/canvas/test_architecture_canvas.test.tsx`: Tests node rendering, edge connection, and store synchronization.
+- `tests/components/canvas/test_architecture_canvas.test.tsx`: Tests node rendering, `@xyflow/react` edge connection, reactive `useNodesData`, and store synchronization.
 
 ### Coverage & Quality Gates
 - **$\ge 90\%$ branch and line coverage**.
@@ -194,11 +210,13 @@ npm run test:cov
 
 - [ ] Implement `CanvasConstants` in `src/components/canvas/canvas_constants.ts`.
 - [ ] Implement `GraphTopologyValidator` in `src/components/canvas/graph_topology_validator.ts`.
-- [ ] Implement all 7 custom node components in `src/components/canvas/nodes/`.
+- [ ] Implement `InteractiveInfraEdge` in `src/components/canvas/edges/interactive_infra_edge.tsx`.
+- [ ] Implement all custom node components in `src/components/canvas/nodes/`.
+- [ ] Implement subflow group nodes in `src/components/canvas/subflows/`.
 - [ ] Implement `AriaLiveAnnouncer` in `src/components/canvas/aria_live_announcer.ts`.
 - [ ] Implement `CanvasKeyboardNavigator` in `src/components/canvas/canvas_keyboard_navigator.ts`.
 - [ ] Implement `TemplateCatalog` in `src/components/canvas/template_catalog.ts`.
 - [ ] Implement `ArchitectureCanvas` in `src/components/canvas/architecture_canvas.tsx`.
-- [ ] Write all 5 comprehensive test suites ensuring $\ge 90\%$ branch coverage.
+- [ ] Write all 7 comprehensive test suites ensuring $\ge 90\%$ branch coverage.
 - [ ] Verify zero lint, type, or test errors.
 

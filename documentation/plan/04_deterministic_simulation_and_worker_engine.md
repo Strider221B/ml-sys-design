@@ -15,12 +15,13 @@
 Implement the high-performance **Deterministic Simulation & Web Worker Engine** that powers real-time trade-off matrices, hardware bottleneck profiling, and FinOps unit economics directly in the client browser.
 
 ### Core Deliverables
-1. **$<100\text{ ms}$ Execution SLA**: Decouple numerical graph calculations from the main UI thread by executing inside dedicated Web Workers via `Comlink` RPC.
-2. **Queuing Theory Latency Engine (`QueuingTheoryModel`)**: Implements $M/G/c$ multi-server queuing approximations (Kingman's / Allen-Cunneen formula) and Pollaczek-Khinchine formulations to calculate end-to-end p50, p95, and p99 DAG latencies.
-3. **LLM Serving Latency Calculator (`LlmServingLatencyCalculator`)**: Computes Time-to-First-Byte (TTFT) and Time-Per-Output-Token (TPOT) accounting for prompt length, parameter count, KV-cache footprint, and speculative decoding speedups.
-4. **Roofline Hardware Profiler (`RooflineModelProfiler`)**: Models operational intensity ($I = \text{FLOPs} / \text{Byte}$) against peak FLOPS and HBM bandwidth across NVIDIA H100 SXM5, Google TPU v5p, AMD MI300X, and NVIDIA L4.
-5. **FinOps & Hardware Unit Economics Calculator (`FinOpsCalculator`)**: Evaluates monthly infrastructure burn against target QPS, comparing open-source hosting (vLLM) vs proprietary API routing vs prompt caching.
-6. **Benchmark Validation Suite**: Automated performance assertions ensuring simulations complete in $<15\text{ ms}$ (well under the $100\text{ ms}$ user requirement).
+1. **$<100\text{ ms}$ Execution SLA**: Decouple numerical graph calculations from the main React 19.3 UI thread by executing inside dedicated Web Workers via `Comlink` RPC.
+2. **Next.js 16.4 Native Worker Instantiation (`SimWorkerClient`)**: Native ES module worker bundling via `new Worker(new URL('...', import.meta.url), { type: 'module' })` eliminating custom Webpack worker loaders.
+3. **Queuing Theory Latency Engine (`QueuingTheoryModel`)**: Implements $M/G/c$ multi-server queuing approximations (Kingman's / Allen-Cunneen formula) and Pollaczek-Khinchine formulations to calculate end-to-end p50, p95, and p99 DAG latencies.
+4. **LLM Serving Latency Calculator (`LlmServingLatencyCalculator`)**: Computes Time-to-First-Byte (TTFT) and Time-Per-Output-Token (TPOT) accounting for prompt length, parameter count, KV-cache footprint, and speculative decoding speedups.
+5. **Roofline Hardware Profiler (`RooflineModelProfiler`)**: Models operational intensity ($I = \text{FLOPs} / \text{Byte}$) against peak FLOPS and HBM bandwidth across NVIDIA H100 SXM5, Google TPU v5p, AMD MI300X, and NVIDIA L4.
+6. **FinOps & Hardware Unit Economics Calculator (`FinOpsCalculator`)**: Evaluates monthly infrastructure burn against target QPS, comparing open-source hosting (vLLM) vs proprietary API routing vs prompt caching.
+7. **Benchmark Validation Suite**: Automated performance assertions ensuring simulations complete in $<15\text{ ms}$ (well under the $100\text{ ms}$ user requirement).
 
 ---
 
@@ -34,7 +35,8 @@ Implement the high-performance **Deterministic Simulation & Web Worker Engine** 
 | `src/core/math/finops_calculator.ts` | `FinOpsCalculator` | Monthly compute, GPU instance sizing, and token economics | ~170 |
 | `src/core/math/hardware_specs_database.ts` | `HardwareSpecsDatabase` | Authoritative specifications for H100, TPU v5p, MI300X, etc. | ~150 |
 | `src/workers/deterministic_sim_worker.ts` | `DeterministicSimWorker` | Web Worker implementation processing DAG graphs via Comlink | ~210 |
-| `src/workers/sim_worker_controller.ts` | `SimWorkerController` | Main thread proxy managing Web Worker lifecycle and RPC calls | ~140 |
+| `src/workers/sim_worker_client.ts` | `SimWorkerClient` | Next.js 16.4 native ES module worker instantiator and Comlink wrapper | ~110 |
+| `src/workers/sim_worker_controller.ts` | `SimWorkerController` | Main thread proxy managing Web Worker lifecycle, RPC calls and error recovery | ~140 |
 | `src/core/math/math_constants.ts` | `MathConstants` | Mathematical constants, default hardware profiles, cost rates | ~80 |
 
 ---
@@ -81,16 +83,21 @@ Implement the high-performance **Deterministic Simulation & Web Worker Engine** 
   - Public method: `calculateMonthlyCost(qps: number, chipId: string, instanceCount: number): FinOpsSummary`
   - Public method: `recommendOptimizedAllocation(targetQps: number, monthlyBudgetUSD: number): AllocationRecommendation`
 
-### Step 5: Implement Web Worker & Main Thread Controller
+### Step 5: Implement Web Worker & Native Next.js 16.4 Client Controller
 - File: `src/workers/deterministic_sim_worker.ts`
 - Class: `DeterministicSimWorker`
   - Comlink-exposed class running in browser Web Worker thread.
   - Injects `QueuingTheoryModel`, `LlmServingLatencyCalculator`, `RooflineModelProfiler`, `FinOpsCalculator`.
   - Public method: `evaluateGraph(nodes: CanvasNode[], edges: CanvasEdge[], globalParams: GlobalSimParams): SimEvaluationResult`
   - Decomposes DAG traversal into topological sort and node evaluation helper methods ($\le 20$ lines each).
+- File: `src/workers/sim_worker_client.ts`
+- Class: `SimWorkerClient`
+  - Singleton client managing native Next.js 16.4 ES module worker instantiation:
+    `new Worker(new URL('./deterministic_sim_worker.ts', import.meta.url), { type: 'module' })`.
+  - Wraps worker in Comlink RPC proxy.
 - File: `src/workers/sim_worker_controller.ts`
 - Class: `SimWorkerController`
-  - Spawns Web Worker, initializes Comlink proxy, handles worker crashes and automatic restart.
+  - Manages worker RPC calls, handles worker crashes, and exposes reactive evaluation hooks to UI thread.
 
 ---
 
@@ -174,6 +181,7 @@ npm run test:cov
 - [ ] Implement `RooflineModelProfiler` in `src/core/math/roofline_model_profiler.ts`.
 - [ ] Implement `FinOpsCalculator` in `src/core/math/finops_calculator.ts`.
 - [ ] Implement `DeterministicSimWorker` in `src/workers/deterministic_sim_worker.ts`.
+- [ ] Implement `SimWorkerClient` in `src/workers/sim_worker_client.ts`.
 - [ ] Implement `SimWorkerController` in `src/workers/sim_worker_controller.ts`.
 - [ ] Write all 6 comprehensive test suites ensuring $\ge 90\%$ branch coverage and $<15\text{ ms}$ SLA.
 - [ ] Verify zero lint, type, or test errors.

@@ -17,10 +17,11 @@ Implement the **Chaos Engineering & Failure Sandbox**, challenging engineers wit
 ### Core Deliverables
 1. **Adversarial Playground & Fault Injector (`FaultInjectionEngine`)**:
    - Injects network partitions, token-limit overflows, and race conditions into the architecture canvas graph.
+   - Connects directly to interactive edge cable badges (`InteractiveInfraEdge`) enabling single-click fault injection on target communication channels.
 2. **"Gemini Argon" Adversarial Reviewer (`GeminiArgonReviewer`)**:
    - Analyzes canvas graphs to detect hidden single-points-of-failure and generates custom **Killer Workload Packets** (e.g. adversarial prompts, skewed embedding clusters) designed to trigger cascading crashes.
 3. **Agent Cascading Loop Simulator (`AgentCircuitBreaker`, `AgentCascadeSimulator`)**:
-   - Simulates multi-agent systems entering infinite recursive execution loops, draining API token budgets.
+   - Simulates multi-agent systems entering infinite recursive execution loops within nested agent swarm subflows (`AgentSwarmGroupNode`), draining API token budgets.
    - Enables users to configure deterministic circuit breakers: maximum loop depth, budget ceilings, and loopback cycle detectors.
 4. **Edge & Quantization Debugger (`EdgeQuantizationDebugger`)**:
    - Models mobile/embedded memory ceilings, thermal throttling clock drops, and perplexity degradation across FP32, FP16, INT8, and INT4 quantization.
