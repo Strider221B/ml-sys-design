@@ -1,0 +1,16 @@
+version: '3.8'
+
+services:
+  ml-sys-design-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ml_sys_design_2026
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - NEXT_PUBLIC_GOOGLE_CLIENT_ID=${NEXT_PUBLIC_GOOGLE_CLIENT_ID:-}
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+    restart: unless-stopped
+
