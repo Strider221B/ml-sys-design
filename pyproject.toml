@@ -43,7 +43,7 @@ warn_return_any = true
 [tool.pytest.ini_options]
 minversion = "8.0"
 pythonpath = ["."]
-addopts = "-ra -q --cov=scripts --cov-report=term-missing --cov-fail-under=90"
+addopts = "-ra -q --cov=scripts --cov=src --cov-report=term-missing --cov-fail-under=90"
 testpaths = ["tests"]
 python_files = ["test_*.py", "*_test.py"]
 
