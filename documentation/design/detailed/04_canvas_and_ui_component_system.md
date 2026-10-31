@@ -11,7 +11,27 @@ The **2026 ML System Design Platform** features an interactive, high-performance
 
 ## 2. Canvas Architecture & Node Topology
 
-The canvas is constructed on **React Flow (v12)** extended with customized WebGL overlays for edge particle flow and real-time hardware telemetry badges.
+The canvas is constructed on **`@xyflow/react` (v12.12+)** extended with customized WebGL overlays for edge particle flow and real-time hardware telemetry badges.
+
+### 2.1 Leveraging Modern `@xyflow/react` 12.12 Features
+
+1. **Reactive Node Data Subscriptions via `useNodesData<T>()`**:
+   - Rather than forcing the entire React canvas or root Zustand store to re-render whenever an upstream node's metrics change, downstream nodes subscribe directly to connected upstream node data:
+     ```typescript
+     const upstreamData = useNodesData<FeatureStoreData>(sourceNodeId);
+     ```
+   - In a complex pipeline (e.g., Feature Store $\to$ Embedding Model $\to$ Vector DB $\to$ vLLM Cluster), updating feature embedding dimensions only re-renders the immediately connected downstream nodes in $<5\text{ ms}$.
+2. **Interactive Edge Overlays via `<EdgeLabelRenderer>` & `<BaseEdge>`**:
+   - Network connections render custom HTML overlays directly on the canvas DOM via HTML portals.
+   - Displays real-time wire latency (`gRPC (0.3ms)`), serialization protocols, bandwidth saturation bars, and an interactive **"Inject Chaos Fault"** button directly on the cable without SVG text measurement performance penalties.
+3. **Live Connection Validation via `useConnection()`**:
+   - The connection drawing state machine validates ports in real time. Dragging a connection handle dynamically inspects candidate target ports and provides immediate visual feedback (emerald glow for compatible tensor shapes/protocols; vermilion glow with tooltip for incompatibilities, e.g., connecting a batch lake directly to a sub-20ms streaming gateway).
+4. **Hierarchical Subflows (`parentId` & `extent: 'parent'`)**:
+   - Native nested grouping for multi-agent swarms (e.g., **Supervisor Node** containing internal Worker Agent sub-nodes) and distributed hardware clusters (e.g., **vLLM Cluster Group** containing individual GPU worker replicas, KV-cache managers, and PagedAttention coordinators).
+5. **Dynamic `<NodeResizer>` / `<NodeResizeControl>`**:
+   - Enables users to resize telemetry-heavy blocks (e.g. LLM Serving clusters, Profiler Nodes) to expand embedded live flame charts, attention head grids, and memory fragmentation heatmaps without opening external modal dialogs.
+6. **Native WCAG 2.1 Theming via `colorMode="system" | "dark" | "light"`**:
+   - Built-in theme switching integrated seamlessly with high-contrast Okabe-Ito color palettes.
 
 ```mermaid
 classDiagram
@@ -281,10 +301,55 @@ Whenever the deterministic Web Worker completes a simulation delta, changes are 
 ## 6. Implementation Code Contracts
 
 ```typescript
+// src/components/canvas/InteractiveInfraEdge.tsx
+
+import React from 'react';
+import { BaseEdge, EdgeLabelRenderer, EdgeProps, getBezierPath } from '@xyflow/react';
+
+export const InteractiveInfraEdge: React.FC<EdgeProps> = ({
+  id,
+  sourceX,
+  sourceY,
+  targetX,
+  targetY,
+  sourcePosition,
+  targetPosition,
+  data,
+}) => {
+  const [edgePath, labelX, labelY] = getBezierPath({
+    sourceX,
+    sourceY,
+    sourcePosition,
+    targetX,
+    targetY,
+    targetPosition,
+  });
+
+  return (
+    <>
+      <BaseEdge id={id} path={edgePath} className="stroke-slate-500 stroke-2" />
+      <EdgeLabelRenderer>
+        <div
+          style={{
+            position: 'absolute',
+            transform: `translate(-50%, -50%) translate(${labelX}px,${labelY}px)`,
+            pointerEvents: 'all',
+          }}
+          className="nodrag nopan bg-slate-900 border border-slate-700 px-2 py-0.5 rounded text-xs text-slate-200 shadow"
+        >
+          <span>{data?.protocol || 'gRPC'} ({data?.latencyMs || 0.4}ms)</span>
+        </div>
+      </EdgeLabelRenderer>
+    </>
+  );
+};
+```
+
+```typescript
 // src/components/canvas/CanvasKeyboardManager.tsx
 
 import React, { useEffect } from 'react';
-import { useReactFlow } from 'reactflow';
+import { useReactFlow } from '@xyflow/react';
 import { useZustandStore } from '../../core/state/store';
 
 export const CanvasKeyboardManager: React.FC = () => {

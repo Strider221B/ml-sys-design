@@ -15,7 +15,12 @@
 Implement the platform's visual presentation core: the **Interactive Architecture Canvas**, featuring customized ML infrastructure block topologies, DAG topological validation, pre-configured architectural templates, and **WCAG 2.1 AA/AAA keyboard accessibility**.
 
 ### Core Deliverables
-1. **Interactive Drag-and-Drop Canvas (`ArchitectureCanvas`)**: Built with `@xyflow/react`, wired directly to the RAM-only Zustand store and the background `DeterministicSimWorker`.
+1. **Interactive Drag-and-Drop Canvas (`ArchitectureCanvas`)**: Built with `@xyflow/react` (v12.12+), wired directly to the RAM-only Zustand 5.0 store and the background `DeterministicSimWorker`.
+   - Utilizes `useNodesData()` for localized reactive node subscriptions without global re-renders.
+   - Leverages `useConnection()` for real-time edge connection validation and port compatibility hints.
+   - Employs `<EdgeLabelRenderer>` and `<BaseEdge>` for interactive latency and protocol badges directly on cables.
+   - Supports subflows (`parentId`) for grouping multi-agent swarms and distributed GPU clusters.
+   - Supports `<NodeResizer>` for dynamic telemetry widget expansion.
 2. **2026 Custom Infrastructure Node Topologies**:
    - `InferenceGatewayNode`: Manages ingress routing, load balancing, and rate limiting.
    - `ModelWorkerNode`: Visualizes vLLM/TensorRT-LLM execution, GPU memory usage, and quantization (FP16, INT8, INT4).

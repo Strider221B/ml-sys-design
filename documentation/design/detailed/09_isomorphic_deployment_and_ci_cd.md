@@ -3,10 +3,10 @@
 ## 1. Executive Summary & Deployment Mandates
 
 The **2026 ML System Design Platform** is designed for **Isomorphic Deployment Parity**:
-1. **Localhost Execution**: Runs natively on developer workstations via Node.js (`npm run dev`) or containerized via `docker compose up`.
-2. **Vercel Cloud Deployment**: Deploys without reconfiguration to Vercel's global Edge network (`*.vercel.app`) using Next.js App Router and stateless Edge functions.
+1. **Localhost Execution**: Runs natively on developer workstations via Node.js 24 LTS (`npm run dev` with Next.js 16.4 Turbopack) or containerized via `docker compose up`.
+2. **Vercel Cloud Deployment**: Deploys without reconfiguration to Vercel's global Edge network (`*.vercel.app`) using Next.js 16.4 App Router and stateless Edge functions.
 3. **Stateless Backend Guarantee**: The backend maintains zero databases, zero sessions, and zero permanent disks. All user state is synced from the client browser directly to Google Drive (SSOT).
-4. **Local CI/CD Quality Gates**: Full adherence to 90%+ test coverage, strict type safety, method/file length limits, and zero lint violations.
+4. **Local CI/CD Quality Gates**: Full adherence to 90%+ branch test coverage (Vitest 2.1 with v8 coverage provider / Pytest), strict type safety (`tsc --noEmit`, `mypy --strict`), method ($\le 20$ lines) and file ($\le 500$ lines) limits, and zero lint violations (`eslint 9`, `ruff`).
 
 ---
 
