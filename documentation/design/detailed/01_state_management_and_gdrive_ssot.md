@@ -148,7 +148,61 @@ sequenceDiagram
     App->>App: Store access_token in RAM and trigger initial sync
 ```
 
-### 3.2 Google Drive Folder & File Hierarchy
+### 3.2 Interactive Google Drive Header Control & Visual States (`GDriveSyncControl`)
+
+To resolve user ambiguity regarding session persistence and provide a prominent, accessible sign-in flow, the static header badge is replaced with an interactive **Google Drive Authentication & Sync Control** (`GDriveSyncControl`).
+
+#### 3.2.1 UI State Machine & Visual Representations
+
+```mermaid
+stateDiagram-v2
+    [*] --> Disconnected: App Loads in Browser RAM
+    
+    Disconnected --> Connecting: User Clicks "Connect Google Drive"
+    Connecting --> Synced: OAuth Popup Approved & Token Received
+    Connecting --> Disconnected: User Cancels Popup or Network Error
+    
+    Synced --> Syncing: Mutation Debounce Timer (1500ms) Fires
+    Syncing --> Synced: Drive PATCH 200 OK (ETag Updated)
+    Syncing --> Conflict: Drive PATCH 412 Precondition Failed
+    
+    Conflict --> Synced: Conflict Resolved via 3-Way Merge
+    
+    Synced --> Disconnected: User Clicks "Sign Out / Disconnect"
+```
+
+| State Name | Header Visual Elements | User Tooltip & Context Message | Available Actions on Click |
+| :--- | :--- | :--- | :--- |
+| **`DISCONNECTED`** | • Prominent **"Connect Google Drive"** button (Google Drive icon, blue background)<br>• Amber warning pill: `⚠️ RAM-Only (Unsaved)` | *"Zero local storage enabled. Your architecture exists only in volatile RAM and will be lost on page reload. Connect Google Drive to auto-sync to your private folder."* | • Triggers `GoogleAuthClient.requestAccessToken()` popup<br>• Emergency fallback: "Download Offline JSON Backup" |
+| **`CONNECTING`** | • Blue spinning ring animation<br>• Label: *"Connecting to Google..."* | *"Waiting for Google OAuth2 authorization popup..."* | • Disabled (wait for popup resolution or timeout) |
+| **`SYNCED`** | • User avatar/email pill (e.g., `user@gmail.com`)<br>• Pulsing emerald dot: `🟢 Synced (Drive)`<br>• Subtext: *"Saved 2m ago"* | *"Single Source of Truth active. Synced to /ML_System_Design_2026_SSOT/ (ETag: 8f9a2b)."* | Opens Dropdown Menu:<br>1. **Force Sync Now (Cmd+S)**<br>2. **Open Drive Folder** (direct URL)<br>3. **Switch Workspace / New File**<br>4. **Disconnect Account** |
+| **`SYNCING`** | • Rotating cyan sync indicator<br>• Label: *"Saving changes..."* | *"Uploading debounced workspace diff to Google Drive REST API v3..."* | • Non-blocking background sync |
+| **`CONFLICT`** | • Pulsing vermilion alert: `🔴 Sync Conflict (HTTP 412)` | *"A newer version exists on Google Drive. Resolution required."* | • Opens interactive 3-Way Merge Conflict Resolver Dialog |
+
+#### 3.2.2 Dropdown Popover Specification (Connected State)
+
+When connected, clicking the user pill reveals a detailed synchronization and account popover:
+1. **Google Account Identifier**: Displays user's Google display name and authenticated email address with a signed-in badge.
+2. **SSOT Root Directory Link**: One-click external link opening the user's private `/ML_System_Design_2026_SSOT/` folder directly in Google Drive.
+3. **Workspace File Management**:
+   - Current active file name (e.g., `ws_1e3f8a_enterprise_rag.json`).
+   - Last modified timestamp and current ETag hash.
+   - **"New Blank Canvas"** action.
+   - **"Open File from Drive"** picker (lists files in `/ML_System_Design_2026_SSOT/workspaces/`).
+4. **Manual Actions**:
+   - **"Force Sync Now"**: Immediately cancels the 1500ms debounce timer and pushes state to Drive.
+   - **"Download JSON Snapshot"**: Exports active RAM state as a local `.json` file.
+   - **"Disconnect Google Drive"**: Clears token from in-memory `AuthSlice` and returns UI to `DISCONNECTED` state without clearing active canvas RAM.
+
+#### 3.2.3 Data Loss Prevention: BeforeUnload & Ephemeral Warning Guard
+
+To safeguard user work when running in `DISCONNECTED` mode:
+- If `isDirty === true` and `authStatus === 'DISCONNECTED'`, a global top-of-canvas warning bar appears:
+  > **⚠️ Running in Ephemeral Mode**: Your design is stored only in browser memory. [Connect Google Drive] to enable auto-save, or [Export JSON Backup] to save your progress.
+- Attempting to close or reload the browser triggers the native `beforeunload` dialog:
+  > *"Changes you made may not be saved. You are not connected to Google Drive SSOT."*
+
+### 3.3 Google Drive Folder & File Hierarchy
 
 The platform isolates all data within a single root folder at the base of the user's Google Drive:
 
@@ -174,7 +228,7 @@ The platform isolates all data within a single root folder at the base of the us
         └── response_AI_INTERVIEW_20261030.json
 ```
 
-### 3.3 Core Manifest JSON Schema (`manifest.json`)
+### 3.4 Core Manifest JSON Schema (`manifest.json`)
 
 The `manifest.json` file serves as the directory catalog and root index for the user's entire platform footprint:
 

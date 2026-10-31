@@ -85,6 +85,8 @@ graph TB
 graph TB
     subgraph Browser_Runtime["Browser Client Runtime (Zero Local Disk/Storage Persistence)"]
         subgraph UI_Presentation["Presentation & Interaction Layer"]
+            HeaderDeck["Global Header Deck & GDriveSyncControl\n(Drive Login/Sync Pill, Tab Switcher, Quick Help)"]
+            GuidanceBanners["Contextual Screen Guidance & Onboarding\n(ScreenContextBanner, NodeInspectorDrawer)"]
             CanvasUI["Interactive Architecture Canvas\n(@xyflow/react 12.12 / Custom WebGL)"]
             TelemetryUI["Telemetry & Profiler Dashboard\n(Canvas2D / WebGL2 / 60 FPS)"]
             InterviewUI["6-Step Interview Terminal\n(Voice Web Speech + Graph Exporter)"]
@@ -102,17 +104,19 @@ graph TB
         end
 
         subgraph Client_Services["Client Integration Services"]
-            GDriveSync["GDrive SSOT Sync Engine\n(Debounced Diffing, ETag Conflict Resolver)"]
+            GDriveSync["GDrive SSOT Sync Engine & GIS Auth Client\n(Debounced Diffing, ETag Conflict Resolver)"]
             LLMOrch["Dual-Mode LLM Orchestrator\n(Direct API & JSON Import/Export Validator)"]
             ExportService["IaC & Portfolio Exporter\n(Terraform, K8s, GitHub Pages API)"]
         end
     end
 
     subgraph Serverless_Edge_Layer["Stateless Edge Gateway (Vercel Edge / Localhost API)"]
-        AuthRoutes["/api/auth/[provider]\n(Google / GitHub OAuth Token Exchange)"]
+        AuthRoutes["/api/auth/github/callback\n(Stateless GitHub Pages OAuth Broker)"]
         RateProxy["/api/gemini/proxy\n(Optional Token-Bucket Rate Limiter)"]
     end
 
+    HeaderDeck <--> RAMStore
+    GuidanceBanners <--> RAMStore
     CanvasUI <--> RAMStore
     TelemetryUI <--> RAMStore
     InterviewUI <--> RAMStore
@@ -126,10 +130,31 @@ graph TB
     RAMStore <--> LLMOrch
     RAMStore <--> ExportService
 
-    GDriveSync <--> AuthRoutes
     ExportService <--> AuthRoutes
     LLMOrch --> RateProxy
 ```
+
+### 3.3 End-to-End User Experience & The 6-Screen Operational Loop
+
+To prevent user disorientation across the platform's multi-screen surface, the architecture enforces a cohesive operational loop with clear expectations at each stage:
+
+```mermaid
+flowchart LR
+    Screen4["4. Curriculum Explorer\nPick challenge & load constraints"] --> Screen1["1. Architecture Canvas\nWire components & inspect nodes"]
+    Screen1 --> Screen5["5. Telemetry & Profiler\nInspect 60 FPS latency waterfall"]
+    Screen5 --> Screen3["3. Chaos Sandbox\nStress-test with failure attacks"]
+    Screen3 --> Screen6["6. FinOps Workspace\nSize GPU clusters & calculate bill"]
+    Screen6 --> Screen2["2. AI Interview Simulator\nPractice 6-step FAANG defense"]
+    Screen2 --> SSOTSync["GDrive SSOT\nSync state & Export IaC"]
+    SSOTSync --> Screen4
+```
+
+1. **Discover & Select**: User selects an engineering scenario in **Curriculum** (e.g., *Hybrid Search RAG*), loading starter constraints into RAM.
+2. **Design & Topology**: User wires components on the **Canvas**, utilizing the **Node Inspector Drawer** to adjust QPS, hardware SKUs, and quantization.
+3. **Observe**: User examines the **Telemetry** dashboard to trace end-to-end latency waterfalls ($p50, p95, p99$) and $M/G/c$ queuing saturation.
+4. **Stress-Test**: User triggers failure modes in **Chaos Sandbox** (*Poisson Burst*, *OOM Degradation*) to locate breaking points and apply mitigations.
+5. **Financially Optimize**: User models hardware provisioning in **FinOps**, finding the Pareto frontier of GPU cost vs. latency SLA.
+6. **Defend & Persist**: User executes mock defense in **AI Interview Simulator**, and commits progress to private **Google Drive SSOT** via the header `GDriveSyncControl`.
 
 ---
 

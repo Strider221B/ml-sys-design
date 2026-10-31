@@ -37,6 +37,10 @@ Implement the platform's visual presentation core: the **Interactive Architectur
 5. **WCAG 2.1 AA/AAA Accessibility Engine (`CanvasKeyboardNavigator`, `AriaLiveAnnouncer`)**:
    - Complete keyboard traversal (Arrow keys for navigation, Tab for handles, Enter for connection, Delete for node removal).
    - Screen reader announcements updating status and simulation results via `aria-live`.
+6. **UI Guidance & Expectations Framework**:
+   - `ScreenContextBanner`: Docked guidance banner presenting screen purpose, step-by-step checklist, and quick-action shortcuts.
+   - `NodeInspectorDrawer`: Sliding configuration panel with parameter explainers, hardware defaults, and live impact feedback.
+   - `PlatformOnboardingModal`: 4-step onboarding walkthrough for first-time users.
 
 ---
 
@@ -58,6 +62,9 @@ Implement the platform's visual presentation core: the **Interactive Architectur
 | `src/components/canvas/nodes/semantic_guardrail_node.tsx` | `SemanticGuardrailNode` | Visual component for Safety Guardrail block | ~130 |
 | `src/components/canvas/subflows/agent_swarm_group_node.tsx` | `AgentSwarmGroupNode` | Hierarchical subflow container (`parentId`, `extent: 'parent'`) for multi-agents | ~140 |
 | `src/components/canvas/subflows/vllm_cluster_group_node.tsx` | `VllmClusterGroupNode` | Hierarchical subflow container for distributed GPU worker replicas | ~140 |
+| `src/components/guidance/screen_context_banner.tsx` | `ScreenContextBanner` | Docked screen guidance banner with checklists and shortcuts | ~140 |
+| `src/components/guidance/node_inspector_drawer.tsx` | `NodeInspectorDrawer` | Slide-over inspector with parameter explainers and live impact | ~180 |
+| `src/components/guidance/platform_onboarding_modal.tsx` | `PlatformOnboardingModal` | 4-slide onboarding walkthrough modal for new users | ~150 |
 | `src/components/canvas/canvas_constants.ts` | `CanvasConstants` | Layout constants, handle IDs, colors, accessible aria labels | ~80 |
 
 ---
@@ -121,6 +128,24 @@ Implement the platform's visual presentation core: the **Interactive Architectur
   - Sets `colorMode="system"` for native dark/light/system theme adaptation.
   - Connects canvas change callbacks (`onNodesChange`, `onEdgesChange`, `onConnect`) to `WorkspaceStore`.
   - Dispatches graph deltas to `SimWorkerController` maintaining $<100\text{ ms}$ feedback.
+
+### Step 7: Implement Screen Guidance Banner & Onboarding Modal
+- Files: `src/components/guidance/screen_context_banner.tsx`, `src/components/guidance/platform_onboarding_modal.tsx`
+- Classes/Components: `ScreenContextBanner`, `PlatformOnboardingModal`
+  - `ScreenContextBanner`:
+    - Renders contextual screen badge and purpose summary.
+    - Displays 3-step numbered action checklist guiding the user on what to do.
+    - Provides quickstart CTA buttons and collapsible banner toggle.
+  - `PlatformOnboardingModal`:
+    - Interactive 4-slide tour: Simulation engine vision, 6 workspaces loop, Google Drive SSOT zero-storage login, and Dual-mode AI exchange.
+
+### Step 8: Implement Interactive Node Inspector Drawer
+- File: `src/components/guidance/node_inspector_drawer.tsx`
+- Class/Component: `NodeInspectorDrawer`
+  - Slides open on node click with component title, type, and connections.
+  - Exposes interactive parameter sliders with inline `(?)` tooltips explaining metrics (TTFT, p99, recall@k).
+  - Calculates real-time preview of latency impact and cost delta.
+  - Provides node actions: duplicate, disconnect edges, delete.
 
 ---
 
@@ -217,6 +242,9 @@ npm run test:cov
 - [x] Implement `CanvasKeyboardNavigator` in `src/components/canvas/canvas_keyboard_navigator.ts`.
 - [x] Implement `TemplateCatalog` in `src/components/canvas/template_catalog.ts`.
 - [x] Implement `ArchitectureCanvas` in `src/components/canvas/architecture_canvas.tsx`.
-- [x] Write all 7 comprehensive test suites ensuring $\ge 90\%$ branch coverage.
-- [x] Verify zero lint, type, or test errors.
+- [ ] Implement `ScreenContextBanner` in `src/components/guidance/screen_context_banner.tsx`.
+- [ ] Implement `NodeInspectorDrawer` in `src/components/guidance/node_inspector_drawer.tsx`.
+- [ ] Implement `PlatformOnboardingModal` in `src/components/guidance/platform_onboarding_modal.tsx`.
+- [ ] Write comprehensive unit tests for guidance components ensuring $\ge 90\%$ branch coverage.
+- [ ] Verify zero lint, type, or test errors.
 

@@ -42,6 +42,7 @@ Implement the **Chaos Engineering & Failure Sandbox**, challenging engineers wit
 | `src/core/chaos/incident_roulette_engine.ts` | `IncidentRouletteEngine` | Real-time incident countdown and error budget burn calculator | ~210 |
 | `src/core/chaos/chaos_constants.ts` | `ChaosConstants` | Failure types, default error budgets, quantization perplexity curves | ~80 |
 | `src/components/chaos/chaos_sandbox_workspace.tsx` | `ChaosSandboxWorkspace` | Interactive failure injection and incident response console | ~240 |
+| `src/components/chaos/chaos_guidance_panel.tsx` | `ChaosGuidancePanel` | Runbook guidance panel detailing attack goals, steps, and mitigation tips | ~150 |
 
 ---
 
@@ -190,6 +191,7 @@ npm run test:cov
 - [ ] Implement `EdgeQuantizationDebugger` in `src/core/chaos/edge_quantization_debugger.ts`.
 - [ ] Implement `IncidentRouletteEngine` in `src/core/chaos/incident_roulette_engine.ts`.
 - [ ] Implement `ChaosSandboxWorkspace` in `src/components/chaos/chaos_sandbox_workspace.tsx`.
-- [ ] Write all 6 comprehensive unit test suites ensuring $\ge 90\%$ branch coverage.
+- [ ] Implement `ChaosGuidancePanel` in `src/components/chaos/chaos_guidance_panel.tsx`.
+- [ ] Write all 7 comprehensive unit test suites ensuring $\ge 90\%$ branch coverage.
 - [ ] Verify zero lint, type, or test errors.
 

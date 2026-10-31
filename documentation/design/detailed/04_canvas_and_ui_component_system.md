@@ -244,11 +244,85 @@ graph TD
 
 ---
 
-## 5. Accessibility Engine (WCAG 2.1 AA/AAA)
+## 5. UI Guidance, Screen-by-Screen Expectations & Onboarding Architecture
+
+To eliminate cognitive friction and ensure users immediately understand the operational expectations of every screen, the platform introduces a comprehensive **Guidance & Expectations Framework**.
+
+### 5.1 Global Navigation & Header Architecture
+
+The application header provides a standardized control deck across all screens:
+
+```mermaid
+graph LR
+    subgraph Global_Header["Application Header Deck"]
+        Brand["ML System Design 2026\n(Deterministic Simulation Engine)"]
+        NavTabs["6 Workspace Tabs:\n[Canvas] [AI Interview] [Chaos Sandbox]\n[Curriculum] [Telemetry] [FinOps]"]
+        HelpBtn["[?] Help & Guide\n(Interactive Quickstart)"]
+        GDriveWidget["GDriveSyncControl:\n[Connect Google Drive] or [🟢 Synced]"]
+        AIExchange["[AI Exchange]\n(Dual-Mode Modal)"]
+        ExportBtn["[Export IaC]\n(Terraform / K8s)"]
+    end
+    
+    Brand --- NavTabs --- HelpBtn --- GDriveWidget --- AIExchange --- ExportBtn
+```
+
+1. **Branding & Status**: Displays system identity and global simulation status.
+2. **Tab Navigation Deck**: Dedicated buttons switching between the 6 distinct operational workspaces.
+3. **`[?] Help & Guide` Button**: Opens the global onboarding walkthrough modal and toggles contextual hints.
+4. **`GDriveSyncControl`**: Prominent Google Drive login and SSOT sync indicator (replaces passive RAM badge).
+5. **`AI Exchange`**: Dual-mode manual/direct LLM envelope manager.
+6. **`Export IaC`**: 1-click serialization to Terraform HCL and Kubernetes Helm values.
+
+---
+
+### 5.2 Screen-by-Screen Expectation & Guidance Matrix
+
+Every workspace has a dedicated purpose, step-by-step user workflow, and clear visual outputs:
+
+| Screen Name & Tab | Screen Purpose & Mental Model | What You Are Expected to Do (Step-by-Step) | What to Expect / Output & Feedback | Next Step in Workflow |
+| :--- | :--- | :--- | :--- | :--- |
+| **1. Architecture Canvas**<br>`/` or `Canvas` | Visual blueprinting and real-time deterministic simulation of ML systems. | 1. **Pick a Blueprint**: Click `Blueprint` dropdown to load a template (e.g., *Hybrid Search RAG*, *Real-Time Fraud*) or click `Clear` for blank.<br>2. **Add Nodes**: Click `+ Gateway`, `+ Model Worker`, `+ Vector DB`, etc., to drop components.<br>3. **Connect Ports**: Drag from right output handle of source node to left input handle of target node.<br>4. **Inspect & Tune**: Click any node to open the **Node Inspector Drawer** to edit QPS, timeout, GPU SKU, or quantization. | • Real-time node status badges: Green (`OPTIMAL`), Orange (`BOTTLENECK`), Red (`OVERLOAD`).<br>• Dynamic edge latency badges (`gRPC (0.3ms)`).<br>• Instant recalculation of end-to-end p99 latency.<br>• Click `Export IaC` for Terraform/K8s manifests. | Proceed to **Chaos Sandbox** to test failure resilience or **Telemetry** to view 60 FPS flame graphs. |
+| **2. AI Interview Simulator**<br>`AI Interview` | 6-step structured mock ML system design interview with an AI interviewer (Staff/Principal rubric). | 1. **Select Problem**: Choose from real-world FAANG challenges (e.g., *YouTube Video RecSys*, *Ad Click Prediction*).<br>2. **Follow 6 Steps**: Progress systematically through: *1. Requirements*, *2. High-Level Design*, *3. Deep Dives*, *4. Scale & Bottlenecks*, *5. Failure Modes*, *6. Trade-offs*.<br>3. **Draft Answer**: Type your design rationale into the response box, or click **"Load Canvas into Answer"** to inject your active architecture.<br>4. **Submit for Review**: Click **"Submit for Evaluation"** (or use AI Exchange modal in manual mode). | • AI interviewer generates probing counter-questions.<br>• Staff/Principal evaluation rubric score (1 to 5 scale) across Correctness, Scale, Trade-offs, and Reliability.<br>• Identifies blind spots and unaddressed edge cases. | Return to **Canvas** to incorporate feedback or navigate to **FinOps** to verify cost assumptions. |
+| **3. Chaos Sandbox**<br>`Chaos Sandbox` | Stress-testing and fault-injection simulator to verify system resilience under adverse conditions. | 1. **Review Health**: Inspect the baseline latency and throughput gauges.<br>2. **Select Attack Vector**: Choose a failure mode (*10x Poisson Traffic Burst*, *Long-Context Prompt Bomb*, *Cache Eviction Storm*, *GPU Worker OOM*), or activate the *Gemini Argon Adversarial Reviewer*.<br>3. **Inject Fault**: Click **"Inject Fault"** to execute the attack.<br>4. **Observe Cascade**: Watch queues fill up and circuit breakers trip.<br>5. **Mitigate**: Adjust architecture on Canvas (add rate limiting, fallback replicas, semantic caching) and re-test. | • Visual failure indicators: Nodes turn red/purple, DLQs accumulate dropped requests.<br>• SLA violation counter and p99 latency explosion alerts.<br>• Downloadable **Incident Post-Mortem Report** (`.json`). | Return to **Canvas** to lock in defensive components, then verify in **Telemetry**. |
+| **4. Curriculum Explorer**<br>`Curriculum` | 13 production ML system design blueprints and structured engineering challenges. | 1. **Filter Modules**: Filter by category (*Generative AI & LLMs*, *RecSys*, *Streaming / Fraud*, *Computer Vision*).<br>2. **Read Challenge Spec**: Inspect business metrics, scale requirements (e.g. 100k QPS), and SLA constraints (e.g. p99 < 50ms).<br>3. **Launch Challenge**: Click **"Load Challenge into Workspace"** to initialize Canvas with the problem's starter skeleton.<br>4. **Track Mastery**: Complete interview steps and chaos tests to mark modules completed. | • Automatically sets up Canvas with starter nodes, target test cases, and evaluation rubrics.<br>• Manifest updates on Google Drive SSOT tracking completion percentage and rubric scores. | Jump to **Canvas** to begin solving the challenge. |
+| **5. Real-Time Telemetry**<br>`Telemetry` | 60 FPS Grafana-style observability engine modeling latency waterfalls, memory fragmentation, and queues. | 1. **Adjust Traffic**: Use the **Ingress QPS Slider** (100 to 20,000 QPS) to simulate peak spikes.<br>2. **Inspect Latency Waterfall**: Trace individual request phases (Network $\to$ Ingress $\to$ Retrieval $\to$ Prefill TTFT $\to$ Decode TPOT).<br>3. **Monitor VRAM & KV Cache**: Inspect the attention head and KV-cache allocation heatmap for memory leaks or churn.<br>4. **Diagnose Bottlenecks**: Identify nodes with queue depth saturation $>80\%$. | • Real-time $M/G/c$ queue depth estimations and buffer saturation gauges.<br>• 60 FPS WebGL2 time-series charts.<br>• Bottleneck diagnosis with concrete remediation tips. | Move to **FinOps** to size hardware to eliminate bottlenecks. |
+| **6. FinOps Workspace**<br>`FinOps` | Accurate hardware provisioning, cloud pricing comparison (AWS vs. GCP vs. Azure), and ROI calculator. | 1. **Configure Workload**: Enter Target QPS, Average Input Tokens, Output Tokens, and SLA bounds.<br>2. **Select Hardware**: Compare *NVIDIA H100 SXM5*, *A100 80GB*, *L40S*, and *Google TPU v5e*.<br>3. **Configure Quantization**: Toggle *FP16*, *INT8*, *INT4 AWQ*, *FP8*, and *PagedAttention*.<br>4. **Calculate Sizing**: Click **"Calculate Provisioning"**.<br>5. **Export Financial Spec**: Click **"Export Cost Breakdown"** to generate an executive report. | • Minimum GPU instance count required to meet SLA.<br>• Monthly cloud hosting cost breakdown across compute, memory, and egress.<br>• Cost-per-million-tokens and power/thermal envelope. | Apply optimal GPU SKU and quantization to the Canvas **Model Worker** nodes. |
+
+---
+
+### 5.3 Dedicated UI Guidance Components
+
+#### 5.3.1 Contextual Screen Guidance Banner (`ScreenContextBanner`)
+Every workspace tab features a docked, collapsible guidance banner immediately beneath the top navigation bar:
+- **Title & Purpose Badge**: Short, punchy summary of what this workspace is designed for.
+- **Quickstart Checklist (1-2-3)**: Numbered steps indicating exactly what actions the user should take.
+- **Quick-Action Buttons**: One-click shortcuts (e.g., *"Load Hybrid Search RAG"*, *"Run 10x Burst Attack"*, *"Start Step 1 Interview"*).
+- **Collapsible Toggle**: Users can collapse the banner to maximize canvas area (`Collapse Guide [^]`), with visibility preference stored in RAM.
+
+#### 5.3.2 Interactive Node Inspector Drawer (`NodeInspectorDrawer`)
+Clicking any node on the Architecture Canvas slides open a configuration drawer on the right side:
+1. **Node Overview**: Displays component role, icon, and upstream/downstream connections.
+2. **Parameter Controls with Inline Explainers**:
+   - Each slider or input includes a `(?)` explainer (e.g., *"What is TTFT? Time to First Token measures the prefill phase latency before streaming starts"*).
+   - Recommended ranges and hardware-specific defaults (e.g., *NVIDIA H100 default: INT4 AWQ with 4 shards*).
+3. **Live Impact Badge**: Dynamically previews the consequence of changes:
+   - *"Changing to INT4 reduces VRAM from 61.2 GB to 32.4 GB, saving \$450/mo with negligible accuracy loss."*
+4. **Node Actions**: "Duplicate", "Disconnect All Edges", "Delete Node".
+
+#### 5.3.3 Global Onboarding Walkthrough Dialog (`PlatformOnboardingModal`)
+An interactive 4-slide tour triggered on the user's first visit or whenever clicking `[?] Help & Guide`:
+- **Slide 1: Welcome to the Simulation Sandbox**: Explains the difference between a static whiteboard and a deterministic simulation engine.
+- **Slide 2: The 6 Operational Workspaces**: Walks through how Canvas, Interview, Chaos, Curriculum, Telemetry, and FinOps form a complete engineering workflow.
+- **Slide 3: Zero Local Storage & Google Drive SSOT**: Explains why the browser does not use localStorage/IndexedDB and guides the user to click **"Connect Google Drive"** to preserve work.
+- **Slide 4: Dual-Mode AI Gateway**: Demonstrates how to use free Gemini API calls or copy-paste prompts into Google AI Studio with zero API keys required.
+
+---
+
+## 6. Accessibility Engine (WCAG 2.1 AA/AAA)
 
 To ensure the complex visual canvas is fully accessible to motor-impaired and visually-impaired engineers:
 
-### 5.1 Keyboard Navigation State Machine
+### 6.1 Keyboard Navigation State Machine
 
 ```mermaid
 stateDiagram-v2
@@ -268,7 +342,7 @@ stateDiagram-v2
     OpenPalette --> AddNewNode: Type node name -> Press Enter inserts at cursor
 ```
 
-### 5.2 Colorblind-Safe Color Palette (Okabe-Ito Scheme)
+### 6.2 Colorblind-Safe Color Palette (Okabe-Ito Scheme)
 
 All charts, nodes, and alerts strictly follow the **Okabe-Ito Colorblind-Safe Palette**:
 
@@ -281,7 +355,7 @@ All charts, nodes, and alerts strictly follow the **Okabe-Ito Colorblind-Safe Pa
 | **Storage / DB** | `#F0E442` | Yellow | $12.5 : 1$ (AAA Compliant) |
 | **Agent / Router** | `#CC79A7` | Reddish Purple | $6.8 : 1$ (AA Compliant) |
 
-### 5.3 Screen Reader Live Regions (`aria-live`)
+### 6.3 Screen Reader Live Regions (`aria-live`)
 
 Whenever the deterministic Web Worker completes a simulation delta, changes are announced via dedicated polite live regions:
 
@@ -298,7 +372,7 @@ Whenever the deterministic Web Worker completes a simulation delta, changes are 
 
 ---
 
-## 6. Implementation Code Contracts
+## 7. Implementation Code Contracts
 
 ```typescript
 // src/components/canvas/InteractiveInfraEdge.tsx
@@ -381,6 +455,6 @@ export const CanvasKeyboardManager: React.FC = () => {
 
 ---
 
-## 7. Next Steps
+## 8. Next Steps
 
 - Proceed to [05_interview_chaos_and_case_study_subsystems.md](file:///home/somesh/git_repos/ml-sys-design/documentation/design/detailed/05_interview_chaos_and_case_study_subsystems.md) for the AI Interview Simulator, Chaos Monkey Engine, and Gemini Argon Adversarial Reviewer.
