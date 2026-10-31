@@ -113,36 +113,39 @@ export function useBeforeUnloadGuard(isDirty: boolean): void {
 
 ## 3. Google Drive SSOT Storage Model
 
-### 3.1 OAuth2 Scope & Authorization Flow
+### 3.1 OAuth2 Scope & Authorization Flow (Google Identity Services Token Model)
 
 The application requests the minimal permission scope necessary to interact with its own files:
 - **Scope**: `https://www.googleapis.com/auth/drive.file`
 - **Security Boundary**: The application can **only** read and write files and folders that it creates itself. It possesses zero access to existing user files, photos, personal documents, or spreadsheets in the user's Drive.
+- **Client-Side Token Model (No Client Secret Required)**:
+  Following the architectural model of `synapse-sync`, Google Drive authentication runs entirely on the client side using the **Google Identity Services (GIS) OAuth 2.0 Token Model** (`https://accounts.google.com/gsi/client`).
+  - **No `GOOGLE_CLIENT_SECRET`**: A client secret is strictly prohibited in client-side Single-Page Applications by OAuth2 specifications and Google security guidelines. Only `NEXT_PUBLIC_GOOGLE_CLIENT_ID` is used.
+  - **Direct In-Memory Delivery**: The access token is delivered directly to a volatile in-memory callback in RAM (`AuthSlice`) and never stored in cookies, local storage, or server logs.
+  - **Zero Server Auth Proxy**: The browser interacts directly with `https://www.googleapis.com/drive/v3/...` using standard Bearer tokens.
 
-#### Authentication Sequence (OAuth2 PKCE Flow)
+#### Authentication Sequence (Client-Side GIS Token Model)
 
 ```mermaid
 sequenceDiagram
     autonumber
     actor User
     participant App as Web Client (Next.js)
-    participant Edge as Edge Auth Broker
-    participant GoogleAuth as Google Identity & OAuth2
+    participant GIS as Google Identity Services (GIS SDK)
+    participant GoogleAuth as Google OAuth2 Authorization Server
     participant GDrive as Google Drive API v3
 
     User->>App: Clicks Connect Google Drive
-    App->>App: Generate PKCE code_verifier and code_challenge (SHA-256)
-    App->>GoogleAuth: Redirect to auth dialog (drive.file scope)
+    App->>GIS: Initialize token client (NEXT_PUBLIC_GOOGLE_CLIENT_ID, drive.file scope)
+    App->>GIS: tokenClient.requestAccessToken()
+    GIS->>GoogleAuth: Open Google consent popup window
     GoogleAuth->>User: Displays consent request for application storage
     User->>GoogleAuth: Approves consent
-    GoogleAuth->>App: Redirects to callback with auth code
-    App->>Edge: POST auth code and PKCE code_verifier
-    Edge->>GoogleAuth: POST token exchange (client_id, code, verifier)
-    GoogleAuth-->>Edge: Return access_token and refresh_token
-    Edge-->>App: Return in-memory session credentials (RAM only)
-    App->>GDrive: GET /drive/v3/about to fetch user profile
+    GoogleAuth-->>GIS: Issue access_token directly to client callback
+    GIS-->>App: Deliver access_token directly into volatile RAM (AuthSlice)
+    App->>GDrive: GET /drive/v3/about to fetch user profile (Authorization: Bearer)
     GDrive-->>App: Return user profile (displayName, email)
-    App->>App: Store access_token in AuthSlice (RAM) and trigger initial sync
+    App->>App: Store access_token in RAM and trigger initial sync
 ```
 
 ### 3.2 Google Drive Folder & File Hierarchy

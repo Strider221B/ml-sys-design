@@ -24,13 +24,12 @@ graph TB
     end
 
     subgraph Stateless_Edge_Routes["Stateless API Handlers (/src/app/api)"]
-        GoogleAuth["/api/auth/google/callback\n(Stateless PKCE Token Exchange)"]
         GitHubAuth["/api/auth/github/callback\n(Stateless GitHub OAuth Broker)"]
         GeminiProxy["/api/gemini/proxy\n(Optional Token-Bucket Free-Tier Rate Limiter)"]
     end
 
     subgraph External_APIs["External SaaS APIs"]
-        GDriveAPI["Google Drive REST API v3\n(User's SSOT Workspace)"]
+        GDriveAPI["Google Drive REST API v3\n(User's SSOT Workspace via GIS Client)"]
         GeminiAPI["Google Gemini Free Tier API\n(Flash/Pro LLM)"]
         GitHubAPI["GitHub REST API\n(GitHub Pages Portfolio)"]
     end
@@ -41,14 +40,12 @@ graph TB
     LocalHost --> Stateless_Edge_Routes
     VercelEdge --> Stateless_Edge_Routes
 
-    Stateless_Edge_Routes <--> GoogleAuth
     Stateless_Edge_Routes <--> GitHubAuth
     Stateless_Edge_Routes <--> GeminiProxy
 
-    GoogleAuth <--> GDriveAPI
     GitHubAuth <--> GitHubAPI
     GeminiProxy <--> GeminiAPI
-    SPA <-->|Direct REST with User Bearer Token| GDriveAPI
+    SPA <-->|Client GIS Token Model & Direct REST| GDriveAPI
 ```
 
 ### 2.1 Route & Middleware Configuration
@@ -57,18 +54,20 @@ graph TB
 | :--- | :--- | :--- | :--- |
 | `/` | Static (SSG) | Landing page & module catalog | None |
 | `/workspace/[moduleId]` | Client Component | Interactive canvas, simulator & profiler | None (RAM only) |
-| `/api/auth/google/callback` | Edge Runtime | Exchanges PKCE auth code for Drive tokens | None (Tokens returned to client RAM) |
 | `/api/auth/github/callback` | Edge Runtime | Exchanges GitHub OAuth code for Pages deploy | None (Returned to client RAM) |
 | `/api/gemini/proxy` | Edge Runtime | Sanitizes & forwards prompts to Gemini | None (Stateless proxy) |
+
+> [!NOTE]
+> Google Drive uses the client-side **Google Identity Services (GIS) Token Model**, so no backend `/api/auth/google/callback` route or `GOOGLE_CLIENT_SECRET` is required. The browser communicates directly with Google Drive API v3 using the in-memory access token.
 
 ---
 
 ## 3. Serverless Edge Handlers (Implementation Contracts)
 
-### 3.1 Google OAuth2 PKCE Token Exchange Handler
+### 3.1 GitHub OAuth Token Exchange Handler (Portfolio Exporter)
 
 ```typescript
-// src/app/api/auth/google/callback/route.ts
+// src/app/api/auth/github/callback/route.ts
 
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -76,39 +75,39 @@ export const runtime = 'edge';
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
   try {
-    const { code, codeVerifier, redirectUri } = await req.json();
+    const { code, state } = await req.json();
 
-    if (!code || !codeVerifier) {
-      return NextResponse.json({ error: 'Missing code or verifier' }, { status: 400 });
+    if (!code) {
+      return NextResponse.json({ error: 'Missing OAuth authorization code' }, { status: 400 });
     }
 
-    const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
+    const tokenResponse = await fetch('https://github.com/login/oauth/access_token', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({
-        client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '',
-        client_secret: process.env.GOOGLE_CLIENT_SECRET || '',
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        client_id: process.env.NEXT_PUBLIC_GITHUB_CLIENT_ID || '',
+        client_secret: process.env.GITHUB_CLIENT_SECRET || '',
         code,
-        code_verifier: codeVerifier,
-        grant_type: 'authorization_code',
-        redirect_uri: redirectUri,
+        state,
       }),
     });
 
     const data = await tokenResponse.json();
 
-    if (!tokenResponse.ok) {
-      return NextResponse.json({ error: data.error_description || 'OAuth exchange failed' }, { status: tokenResponse.status });
+    if (!tokenResponse.ok || data.error) {
+      return NextResponse.json({ error: data.error_description || 'GitHub OAuth exchange failed' }, { status: 400 });
     }
 
-    // Return tokens directly to client memory. Do NOT write to server disk or set persistent cookies.
     return NextResponse.json({
       accessToken: data.access_token,
-      expiresIn: data.expires_in,
       tokenType: data.token_type,
+      scope: data.scope,
     });
   } catch (error) {
-    return NextResponse.json({ error: 'Internal edge error during auth' }, { status: 500 });
+    return NextResponse.json({ error: 'Internal edge error during GitHub auth' }, { status: 500 });
   }
 }
 ```
@@ -135,7 +134,6 @@ services:
     environment:
       - NODE_ENV=development
       - NEXT_PUBLIC_GOOGLE_CLIENT_ID=${NEXT_PUBLIC_GOOGLE_CLIENT_ID}
-      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
       - GEMINI_API_KEY=${GEMINI_API_KEY}
     restart: unless-stopped
 ```

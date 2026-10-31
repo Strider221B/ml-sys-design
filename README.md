@@ -150,7 +150,6 @@ ml-sys-design/
 │       └── ...
 ├── src/
 │   ├── app/                                  # Next.js 16.4 App Router Pages & Edge Routes
-│   │   ├── api/auth/google/callback/         # Stateless PKCE Google OAuth Broker
 │   │   ├── api/auth/github/callback/         # Stateless GitHub Pages OAuth Broker
 │   │   ├── api/gemini/proxy/                 # Rate-Aware Gemini Edge Proxy
 │   │   └── workspace/[moduleId]/             # Unified Interactive Workspace Shell
@@ -160,7 +159,7 @@ ml-sys-design/
 │   │   └── ai_exchange/                      # Dual-Mode Prompt/Response Modal Dialogs
 │   ├── core/
 │   │   ├── state/                            # Zustand 5.0 RAM-Only Store & Workspace Types
-│   │   ├── gdrive/                           # Google Drive API v3 Client & Sync Manager
+│   │   ├── gdrive/                           # GIS Auth, Google Drive v3 Client & Sync Manager
 │   │   ├── ai_gateway/                       # Dual-Mode LLM Orchestrator & Exchange Envelope
 │   │   ├── exporters/                        # Terraform HCL & Kubernetes Manifest Serializers
 │   │   └── math/                             # M/G/c Queuing, Roofline & CUPED Algorithms
@@ -221,13 +220,13 @@ npm install
 Create a local `.env.local` file:
 ```env
 # Google Identity Services / Drive API (Scope: drive.file)
+# Note: Google Client Secret is NOT required (client-side GIS token model, matching synapse-sync)
 NEXT_PUBLIC_GOOGLE_CLIENT_ID=your-google-client-id.apps.googleusercontent.com
-GOOGLE_CLIENT_SECRET=your-google-client-secret
 
 # Google Gemini Free Tier API (Optional for direct mode; manual mode works without key)
 GEMINI_API_KEY=your-gemini-free-tier-api-key
 
-# GitHub OAuth App (Optional, for one-click portfolio export)
+# GitHub OAuth App (Optional, for one-click portfolio export to GitHub Pages)
 NEXT_PUBLIC_GITHUB_CLIENT_ID=your-github-client-id
 GITHUB_CLIENT_SECRET=your-github-client-secret
 ```
