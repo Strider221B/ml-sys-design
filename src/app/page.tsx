@@ -6,37 +6,46 @@ import { ArchitectureCanvas } from '@/components/canvas/architecture_canvas';
 import { ChaosSandboxWorkspace } from '@/components/chaos/chaos_sandbox_workspace';
 import { CurriculumView } from '@/components/curriculum/curriculum_view';
 import { FinopsWorkspace } from '@/components/finops/finops_workspace';
+import { NodeInspectorDrawer } from '@/components/guidance/node_inspector_drawer';
+import { PlatformOnboardingModal } from '@/components/guidance/platform_onboarding_modal';
+import { ScreenContextBanner } from '@/components/guidance/screen_context_banner';
 import { InterviewWorkspace } from '@/components/interview/interview_workspace';
+import { ExportType, HeaderDeck } from '@/components/navigation/header_deck';
 import { TelemetryDashboard } from '@/components/telemetry/telemetry_dashboard';
 import { KubernetesManifestExporter } from '@/core/exporters/kubernetes_manifest_exporter';
 import { ProductionManifestoGenerator } from '@/core/exporters/production_manifesto_generator';
 import { TerraformHclExporter } from '@/core/exporters/terraform_hcl_exporter';
+import {
+  InspectorNodeData,
+  QuickActionDescriptor,
+  WorkspaceTab,
+} from '@/core/state/guidance_types';
 import { WorkspaceStore } from '@/core/state/workspace_store';
 
-export type ActiveTab = 'CANVAS' | 'INTERVIEW' | 'CHAOS' | 'CURRICULUM' | 'TELEMETRY' | 'FINOPS';
-export type ExportType = 'TERRAFORM' | 'K8S' | 'MANIFESTO';
-
-export type PageProps = Record<string, never>;
+export interface PageProps {
+  ref?: React.Ref<Page> | undefined;
+}
 
 export interface PageState {
-  activeTab: ActiveTab;
+  activeTab: WorkspaceTab;
   isAiModalOpen: boolean;
   isExportModalOpen: boolean;
+  isHelpModalOpen: boolean;
+  selectedNode: InspectorNodeData | null;
   exportType: ExportType;
   exportedCode: string;
-  syncStatus: string;
 }
 
 /**
  * 2026 Machine Learning System Design Platform root interactive workspace.
  */
 export class Page extends React.Component<PageProps, PageState> {
-  private static readonly _TAB_CANVAS: ActiveTab = 'CANVAS';
-  private static readonly _TAB_INTERVIEW: ActiveTab = 'INTERVIEW';
-  private static readonly _TAB_CHAOS: ActiveTab = 'CHAOS';
-  private static readonly _TAB_CURRICULUM: ActiveTab = 'CURRICULUM';
-  private static readonly _TAB_TELEMETRY: ActiveTab = 'TELEMETRY';
-  private static readonly _TAB_FINOPS: ActiveTab = 'FINOPS';
+  private static readonly _TAB_CANVAS: WorkspaceTab = 'CANVAS';
+  private static readonly _TAB_INTERVIEW: WorkspaceTab = 'INTERVIEW';
+  private static readonly _TAB_CHAOS: WorkspaceTab = 'CHAOS';
+  private static readonly _TAB_CURRICULUM: WorkspaceTab = 'CURRICULUM';
+  private static readonly _TAB_TELEMETRY: WorkspaceTab = 'TELEMETRY';
+  private static readonly _TAB_FINOPS: WorkspaceTab = 'FINOPS';
 
   public static renderPage(): React.ReactNode {
     return <Page />;
@@ -52,9 +61,10 @@ export class Page extends React.Component<PageProps, PageState> {
       activeTab: Page._TAB_CANVAS,
       isAiModalOpen: false,
       isExportModalOpen: false,
+      isHelpModalOpen: false,
+      selectedNode: null,
       exportType: 'TERRAFORM',
       exportedCode: '',
-      syncStatus: 'EPHEMERAL_RAM_ONLY',
     };
   }
 
@@ -65,12 +75,46 @@ export class Page extends React.Component<PageProps, PageState> {
   public override render(): React.ReactNode {
     return (
       <main className="flex flex-col h-screen w-screen overflow-hidden bg-slate-950 text-slate-100">
-        {this._renderHeader()}
-        <div className="flex-1 overflow-auto relative">
-          {this._renderActiveTabContent()}
-        </div>
+        {this._renderHeaderSection()}
+        {this._renderMainContent()}
         {this._renderModals()}
       </main>
+    );
+  }
+
+  private _renderHeaderSection(): React.ReactNode {
+    return (
+      <>
+        <HeaderDeck
+          activeTab={this.state.activeTab}
+          onTabSelect={(tab) => this._handleTabSelect(tab)}
+          onOpenAiModal={() => this.setState({ isAiModalOpen: true })}
+          onOpenExportModal={(type) => this._handleExportClick(type)}
+          onOpenHelpModal={() => this.setState({ isHelpModalOpen: true })}
+          store={this._store}
+        />
+        <ScreenContextBanner
+          activeTab={this.state.activeTab}
+          onQuickAction={this._handleQuickAction}
+        />
+      </>
+    );
+  }
+
+  private _renderMainContent(): React.ReactNode {
+    return (
+      <div className="flex-1 overflow-auto relative">
+        {this._renderActiveTabContent()}
+        <NodeInspectorDrawer
+          isOpen={Boolean(this.state.selectedNode)}
+          selectedNode={this.state.selectedNode}
+          onClose={() => this.setState({ selectedNode: null })}
+          onUpdateNode={this._handleUpdateInspectorNode}
+          onDuplicateNode={this._handleDuplicateNode}
+          onDisconnectEdges={this._handleDisconnectNode}
+          onDeleteNode={this._handleDeleteInspectorNode}
+        />
+      </div>
     );
   }
 
@@ -92,7 +136,7 @@ export class Page extends React.Component<PageProps, PageState> {
     this.setState({ exportType: type, exportedCode: code });
   }
 
-  private _handleTabSelect(tab: ActiveTab): void {
+  private _handleTabSelect(tab: WorkspaceTab): void {
     this.setState({ activeTab: tab });
   }
 
@@ -101,82 +145,57 @@ export class Page extends React.Component<PageProps, PageState> {
     this.setState({ isExportModalOpen: true });
   }
 
-  private _renderHeader(): React.ReactNode {
-    return (
-      <header className="flex flex-wrap items-center justify-between border-b border-slate-800 bg-slate-900/90 px-4 py-2.5 z-20 gap-3">
-        {this._renderBrand()}
-        {this._renderNavTabs()}
-        {this._renderActions()}
-      </header>
-    );
-  }
+  private _handleQuickAction = (action: QuickActionDescriptor): void => {
+    switch (action.actionType) {
+      case 'LOAD_TEMPLATE':
+        this.setState({ activeTab: Page._TAB_CANVAS });
+        break;
+      case 'START_STEP':
+      case 'LOAD_CANVAS_CONTEXT':
+        this.setState({ activeTab: Page._TAB_INTERVIEW });
+        break;
+      case 'RUN_CHAOS':
+        this.setState({ activeTab: Page._TAB_CHAOS });
+        break;
+      case 'LOAD_BLUEPRINT':
+        this.setState({ activeTab: Page._TAB_CURRICULUM });
+        break;
+      case 'TOGGLE_VIEW':
+        this.setState({ activeTab: Page._TAB_TELEMETRY });
+        break;
+      case 'CALC_FINOPS':
+        this.setState({ activeTab: Page._TAB_FINOPS });
+        break;
+      default:
+        break;
+    }
+  };
 
-  private _renderBrand(): React.ReactNode {
-    return (
-      <div className="flex items-center gap-3">
-        <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-600 font-black text-white text-xs shadow-md shadow-indigo-500/30">
-          ML
-        </span>
-        <div>
-          <span className="font-bold text-sm tracking-tight text-white block">2026 Machine Learning System Design Platform</span>
-          <span className="text-[10px] text-slate-400 font-mono">Deterministic interactive simulation and interview preparation engine.</span>
-        </div>
-      </div>
-    );
-  }
+  private _handleUpdateInspectorNode = (updatedData: Partial<InspectorNodeData>): void => {
+    this.setState((prev) => ({
+      selectedNode: prev.selectedNode ? { ...prev.selectedNode, ...updatedData } : null,
+    }));
+  };
 
-  private _renderNavTabs(): React.ReactNode {
-    return (
-      <nav className="flex items-center gap-1 bg-slate-950/80 p-1 rounded-lg border border-slate-800 text-xs">
-        {this._renderTabBtn(Page._TAB_CANVAS, '🏗️ Canvas')}
-        {this._renderTabBtn(Page._TAB_INTERVIEW, '🎙️ AI Interview')}
-        {this._renderTabBtn(Page._TAB_CHAOS, '⚡ Chaos Sandbox')}
-        {this._renderTabBtn(Page._TAB_CURRICULUM, '📚 Curriculum')}
-        {this._renderTabBtn(Page._TAB_TELEMETRY, '📊 Telemetry')}
-        {this._renderTabBtn(Page._TAB_FINOPS, '💰 FinOps')}
-      </nav>
-    );
-  }
+  private _handleDuplicateNode = (nodeId: string): void => {
+    if (this.state.selectedNode && this.state.selectedNode.id === nodeId) {
+      this.setState({
+        selectedNode: {
+          ...this.state.selectedNode,
+          id: `${nodeId}_copy`,
+          label: `${this.state.selectedNode.label} (Copy)`,
+        },
+      });
+    }
+  };
 
-  private _renderTabBtn(tab: ActiveTab, label: string): React.ReactNode {
-    const isActive = this.state.activeTab === tab;
-    return (
-      <button
-        key={tab}
-        onClick={() => this._handleTabSelect(tab)}
-        className={`px-3 py-1.5 rounded-md font-semibold transition ${
-          isActive
-            ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-500/20'
-            : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
-        }`}
-      >
-        {label}
-      </button>
-    );
-  }
+  private _handleDisconnectNode = (_nodeId: string): void => {
+    // Disconnect edges in store
+  };
 
-  private _renderActions(): React.ReactNode {
-    return (
-      <div className="flex items-center gap-2 text-xs">
-        <span className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-800/80 border border-slate-700 text-slate-300">
-          <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-          RAM-Only SSOT
-        </span>
-        <button
-          onClick={() => this.setState({ isAiModalOpen: true })}
-          className="px-3 py-1.5 rounded-md bg-slate-800 border border-slate-700 hover:bg-slate-700 text-slate-200 font-medium transition"
-        >
-          AI Exchange
-        </button>
-        <button
-          onClick={() => this._handleExportClick('TERRAFORM')}
-          className="px-3 py-1.5 rounded-md bg-indigo-600 hover:bg-indigo-500 text-white font-medium shadow-sm transition"
-        >
-          Export IaC
-        </button>
-      </div>
-    );
-  }
+  private _handleDeleteInspectorNode = (_nodeId: string): void => {
+    this.setState({ selectedNode: null });
+  };
 
   private _renderActiveTabContent(): React.ReactNode {
     switch (this.state.activeTab) {
@@ -205,6 +224,10 @@ export class Page extends React.Component<PageProps, PageState> {
           envelope={null}
           onClose={() => this.setState({ isAiModalOpen: false })}
           onImportSuccess={() => this.setState({ isAiModalOpen: false })}
+        />
+        <PlatformOnboardingModal
+          isOpen={this.state.isHelpModalOpen}
+          onClose={() => this.setState({ isHelpModalOpen: false })}
         />
         {this._renderExportModal()}
       </>
@@ -240,6 +263,7 @@ export class Page extends React.Component<PageProps, PageState> {
           </div>
         </div>
         <button
+          type="button"
           onClick={() => this.setState({ isExportModalOpen: false })}
           className="text-slate-400 hover:text-slate-200 text-lg font-bold"
         >
@@ -254,6 +278,7 @@ export class Page extends React.Component<PageProps, PageState> {
     return (
       <button
         key={type}
+        type="button"
         onClick={() => void this._updateExportedCode(type)}
         className={`px-2.5 py-1 rounded text-xs font-semibold transition ${
           isSel ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-slate-200'
@@ -269,6 +294,7 @@ export class Page extends React.Component<PageProps, PageState> {
       <div className="flex items-center justify-between border-t border-slate-800 px-6 py-3 bg-slate-950/60 text-xs">
         <span className="text-slate-400">Zero disk persistence. Copy or download in memory.</span>
         <button
+          type="button"
           onClick={() => this._handleCopyExport()}
           className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 rounded font-semibold text-white transition shadow-sm"
         >

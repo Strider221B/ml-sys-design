@@ -1,7 +1,7 @@
 # Plan 12: Workspace Guidance, Onboarding & Interactive Google Drive Sync Controls
 
 > **Phase:** 12 (Design Deltas & Instructional UX)  
-> **Status:** Pending Execution  
+> **Status:** Completed  
 > **Design References:**  
 > - [00_overview_and_architecture.md](file:///home/somesh/git_repos/ml-sys-design/documentation/design/detailed/00_overview_and_architecture.md) (Section 3.1, 3.2, 3.3)  
 > - [01_state_management_and_gdrive_ssot.md](file:///home/somesh/git_repos/ml-sys-design/documentation/design/detailed/01_state_management_and_gdrive_ssot.md) (Section 3.2)  
@@ -259,15 +259,15 @@ npm run validate:py
 
 ## 6. Execution Checklist
 
-- [ ] Define guidance and sync status contracts in `src/core/state/guidance_types.ts`.
-- [ ] Implement `GuidanceConstants` in `src/components/guidance/guidance_constants.ts`.
-- [ ] Implement `WorkspaceGuidanceCatalog` in `src/components/guidance/workspace_guidance_catalog.ts`.
-- [ ] Implement `GDriveSyncControl` in `src/components/navigation/gdrive_sync_control.tsx`.
-- [ ] Implement `HeaderDeck` in `src/components/navigation/header_deck.tsx`.
-- [ ] Implement `ScreenContextBanner` in `src/components/guidance/screen_context_banner.tsx`.
-- [ ] Implement `NodeInspectorDrawer` in `src/components/guidance/node_inspector_drawer.tsx`.
-- [ ] Implement `PlatformOnboardingModal` in `src/components/guidance/platform_onboarding_modal.tsx`.
-- [ ] Integrate `HeaderDeck`, `ScreenContextBanner`, and `NodeInspectorDrawer` into `src/app/page.tsx`.
-- [ ] Write all 6 comprehensive test suites ensuring $\ge 90\%$ branch coverage.
-- [ ] Run `npm run typecheck`, `npm test`, `npm run validate:ts`, and `npm run validate:py` to confirm zero errors.
+- [x] Define guidance and sync status contracts in `src/core/state/guidance_types.ts`.
+- [x] Implement `GuidanceConstants` in `src/components/guidance/guidance_constants.ts`.
+- [x] Implement `WorkspaceGuidanceCatalog` in `src/components/guidance/workspace_guidance_catalog.ts`.
+- [x] Implement `GDriveSyncControl` in `src/components/navigation/gdrive_sync_control.tsx`.
+- [x] Implement `HeaderDeck` in `src/components/navigation/header_deck.tsx`.
+- [x] Implement `ScreenContextBanner` in `src/components/guidance/screen_context_banner.tsx`.
+- [x] Implement `NodeInspectorDrawer` in `src/components/guidance/node_inspector_drawer.tsx`.
+- [x] Implement `PlatformOnboardingModal` in `src/components/guidance/platform_onboarding_modal.tsx`.
+- [x] Integrate `HeaderDeck`, `ScreenContextBanner`, and `NodeInspectorDrawer` into `src/app/page.tsx`.
+- [x] Write all 6 comprehensive test suites ensuring $\ge 90\%$ branch coverage.
+- [x] Run `npm run typecheck`, `npm test`, `npm run validate:ts`, and `npm run validate:py` to confirm zero errors.
 
