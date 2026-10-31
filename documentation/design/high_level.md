@@ -289,9 +289,9 @@ Executed inside a dedicated Web Worker on every graph mutation:
    $$L_{p99} = \max_{\pi \in \text{Paths}(G)} \sum_{v \in \pi} \left( L_{\text{base}}(v) + \frac{\rho_v^{\sqrt{2(c_v+1)}-1}}{c_v(1 - \rho_v)} \cdot S_{p99}(v) + L_{\text{network}}(e_{v}) \right)$$
    where $\rho_v = \frac{\lambda_v}{c_v \mu_v}$ is the utilization ratio of node $v$ under arrival rate $\lambda_v$ (QPS), $c_v$ is the replica count, and $S_{p99}(v)$ is the 99th percentile service time (e.g., batch vs. streaming inference).
 2. **Token Time-to-First-Byte ($\text{TTFT}$) & Token Generation Latency**:
-   $$\text{TTFT} = \frac{N_{\text{prompt\_tokens}} \cdot 2 \cdot P_{\text{active}}}{C_{\text{FLOPS}} \cdot \eta_{\text{compute}}} \cdot (1 - r_{\text{cache\_hit}}) + L_{\text{gateway}}$$
-   $$\text{TPOT (Time Per Output Token)} = \frac{B_{\text{model\_weights}} + B_{\text{KV\_cache}}(N_{\text{seq}})}{\text{BW}_{\text{memory}} \cdot \gamma_{\text{spec\_decoding}}}$$
-   where $r_{\text{cache\_hit}}$ is the multi-tenant prompt cache hit ratio and $\gamma_{\text{spec\_decoding}} \ge 1.0$ is the speculative decoding speedup factor.
+   $$\text{TTFT} = \frac{N_{\text{prompt-tokens}} \cdot 2 \cdot P_{\text{active}}}{C_{\text{FLOPS}} \cdot \eta_{\text{compute}}} \cdot (1 - r_{\text{cache-hit}}) + L_{\text{gateway}}$$
+   $$\text{TPOT (Time Per Output Token)} = \frac{B_{\text{model-weights}} + B_{\text{KV-cache}}(N_{\text{seq}})}{\text{BW}_{\text{memory}} \cdot \gamma_{\text{spec-decoding}}}$$
+   where $r_{\text{cache-hit}}$ is the multi-tenant prompt cache hit ratio and $\gamma_{\text{spec-decoding}} \ge 1.0$ is the speculative decoding speedup factor.
 
 #### Pre-Built Agentic & RAG Templates
 * **Multi-Agent Orchestration**: Supervisor Router $\rightarrow$ Stateful LangGraph/Custom Memory Store $\rightarrow$ Parallel Tool-Calling Workers $\rightarrow$ Consensus Verifier $\rightarrow$ Circuit Breaker Gate.
@@ -345,7 +345,7 @@ stateDiagram-v2
 3. **Live Debugger for Edge & Quantized Deployments**:
    * Simulates deploying models onto constrained targets (e.g., $4\text{ GB}$ RAM Mobile/Edge NPU).
    * Calculates memory footprint across quantization levels ($\text{FP32} \rightarrow \text{BF16} \rightarrow \text{INT8} \rightarrow \text{INT4/AWQ/GGUF}$):
-     $$M_{\text{VRAM}} = P_{\text{params}} \cdot \frac{b_{\text{bits}}}{8} \cdot 1.15_{\text{overhead}} + 2 \cdot n_{\text{layers}} \cdot n_{\text{kv\_heads}} \cdot d_{\text{head}} \cdot N_{\text{context}} \cdot \frac{b_{\text{kv}}}{8}$$
+     $$M_{\text{VRAM}} = P_{\text{params}} \cdot \frac{b_{\text{bits}}}{8} \cdot 1.15_{\text{overhead}} + 2 \cdot n_{\text{layers}} \cdot n_{\text{kv-heads}} \cdot d_{\text{head}} \cdot N_{\text{context}} \cdot \frac{b_{\text{kv}}}{8}$$
    * Simulates thermal throttling curves (clock speed reduction after $T > 85^\circ\text{C}$) and perplexity degradation ($\Delta \text{PPL}$).
 4. **Production Incident Roulette & "Gemini Argon" Reviewer**:
    * **Incident Roulette**: A real-time countdown timer where a live SLA error budget ($99.9\%$ uptime) drains while an unannounced fault occurs (e.g., Vector DB API deprecation spiking p99 latency by $40\%$).

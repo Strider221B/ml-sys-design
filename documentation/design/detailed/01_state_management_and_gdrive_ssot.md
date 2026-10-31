@@ -107,23 +107,23 @@ sequenceDiagram
     autonumber
     actor User
     participant App as Web Client (Next.js)
-    participant Edge as Edge Auth Broker (/api/auth/google)
-    participant GoogleAuth as Google Identity / OAuth2 Server
+    participant Edge as Edge Auth Broker
+    participant GoogleAuth as Google Identity & OAuth2
     participant GDrive as Google Drive API v3
 
-    User->>App: Clicks "Connect Google Drive"
-    App->>App: Generate PKCE code_verifier & code_challenge (SHA-256)
-    App->>GoogleAuth: Redirect to auth dialog (scope=drive.file, response_type=code, code_challenge)
-    GoogleAuth->>User: Displays consent: "ML System Design 2026 requests access to files it creates"
+    User->>App: Clicks Connect Google Drive
+    App->>App: Generate PKCE code_verifier and code_challenge (SHA-256)
+    App->>GoogleAuth: Redirect to auth dialog (drive.file scope)
+    GoogleAuth->>User: Displays consent request for application storage
     User->>GoogleAuth: Approves consent
-    GoogleAuth->>App: Redirects to /api/auth/google/callback?code=AUTH_CODE
-    App->>Edge: POST /api/auth/google/callback { code, code_verifier }
-    Edge->>GoogleAuth: POST https://oauth2.googleapis.com/token { client_id, code, verifier }
-    GoogleAuth-->>Edge: { access_token, expires_in, refresh_token, token_type: "Bearer" }
-    Edge-->>App: Return in-memory session credentials (RAM only!)
-    App->>GDrive: GET /drive/v3/about?fields=user
-    GDrive-->>App: { user: { displayName, emailAddress, photoLink } }
-    App->>App: Store access_token in AuthSlice (RAM); trigger initial sync
+    GoogleAuth->>App: Redirects to callback with auth code
+    App->>Edge: POST auth code and PKCE code_verifier
+    Edge->>GoogleAuth: POST token exchange (client_id, code, verifier)
+    GoogleAuth-->>Edge: Return access_token and refresh_token
+    Edge-->>App: Return in-memory session credentials (RAM only)
+    App->>GDrive: GET /drive/v3/about to fetch user profile
+    GDrive-->>App: Return user profile (displayName, email)
+    App->>App: Store access_token in AuthSlice (RAM) and trigger initial sync
 ```
 
 ### 3.2 Google Drive Folder & File Hierarchy
@@ -227,9 +227,9 @@ stateDiagram-v2
     Syncing --> Idle: Drive API returns 200 OK (etag updated)
     Syncing --> Conflict: Drive API returns 412 Precondition Failed
     Conflict --> ResolveModal: Present 3-Way Merge / Diff Dialog to User
-    ResolveModal --> Syncing: User accepts resolution -> Overwrite with merged state
+    ResolveModal --> Syncing: User accepts resolution and overwrites with merged state
     Syncing --> Error: Network Timeout / 5xx Error
-    Error --> OfflineQueue: Queue mutation in RAM; retry with exponential backoff
+    Error --> OfflineQueue: Queue mutation in RAM and retry with exponential backoff
     OfflineQueue --> Syncing: Network restored
 ```
 

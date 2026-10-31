@@ -16,7 +16,7 @@ The canvas is constructed on **React Flow (v12)** extended with customized WebGL
 ```mermaid
 classDiagram
     class BaseInfraNode {
-        <<Abstract>>
+        <<abstract>>
         +String id
         +NodeCategory category
         +String label
@@ -108,16 +108,16 @@ Rendering complex time-series charts, flame graphs, and queue telemetry at $60\t
 ### 3.1 OffscreenCanvas & WebGL Architecture
 
 ```mermaid
-graph TD
+flowchart TD
     subgraph Compute_Worker["Telemetry Stream Worker (Web Worker)"]
         MetricRing["Float32Array Circular Ring Buffer\n(Capacity: 10,000 samples)"]
-        TickLoop["16.6ms High-Resolution Interval (requestAnimationFrame emulation)"]
+        TickLoop["16.6ms High-Resolution Interval\n(requestAnimationFrame emulation)"]
         TickLoop --> MetricRing
     end
 
     subgraph DOM_Thread["Main UI Thread"]
-        CanvasContainer["HTML5 <canvas> Container Element"]
-        ReactUI["React 19 Shell (Zero Re-render overhead)"]
+        CanvasContainer["HTML5 Canvas Container Element"]
+        ReactUI["React 19 Shell\n(Zero Re-render overhead)"]
     end
 
     subgraph GPU_Render["OffscreenCanvas Worker Context"]
@@ -126,9 +126,9 @@ graph TD
         FlameGraphEngine["Canvas2D Flame Chart Painter"]
     end
 
-    CanvasContainer -.->|transferControlToOffscreen()| OffscreenTarget
-    Compute_Worker <-->|SharedArrayBuffer / Zero-Copy Transferable| GPU_Render
-    GPU_Render -->|Direct GPU Blit @ 60 FPS| CanvasContainer
+    CanvasContainer -.->|"transferControlToOffscreen()"| OffscreenTarget
+    MetricRing <-->|"SharedArrayBuffer / Zero-Copy Transferable"| OffscreenTarget
+    OffscreenTarget -->|"Direct GPU Blit @ 60 FPS"| CanvasContainer
 ```
 
 ### 3.2 Metric Ring Buffer Implementation

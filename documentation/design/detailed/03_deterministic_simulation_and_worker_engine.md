@@ -100,13 +100,13 @@ gantt
 
 #### Equations:
 1. **$\text{TTFT}$ with Multi-Tenant Prompt Caching**:
-   $$\text{TTFT} = \left[ \frac{2 \cdot P_{\text{active}} \cdot N_{\text{prompt}} \cdot (1 - r_{\text{cache}})}{C_{\text{FLOPS}} \cdot \eta_{\text{prefill}}} \right] + L_{\text{KV\_fetch}} + L_{\text{gateway}}$$
+   $$\text{TTFT} = \left[ \frac{2 \cdot P_{\text{active}} \cdot N_{\text{prompt}} \cdot (1 - r_{\text{cache}})}{C_{\text{FLOPS}} \cdot \eta_{\text{prefill}}} \right] + L_{\text{KV-fetch}} + L_{\text{gateway}}$$
    - $P_{\text{active}}$: Active model parameters (e.g., $70\text{B}$ for Llama-3-70B; $12\text{B}$ for Mixtral $8\times7\text{B}$ MoE).
    - $r_{\text{cache}}$: Prompt cache hit ratio ($0.0 \le r_{\text{cache}} \le 0.95$).
    - $C_{\text{FLOPS}}$: Aggregate cluster compute throughput ($\text{TFLOPS}$).
    - $\eta_{\text{prefill}}$: MFU (Model FLOPS Utilization) during prefill (empirically $0.55\text{--}0.65$ in 2026).
 2. **$\text{TPOT}$ with Speculative Decoding**:
-   $$\text{TPOT} = \frac{B_{\text{weights}} + B_{\text{KV\_cache}}(N_{\text{seq}})}{\text{BW}_{\text{mem}} \cdot \gamma_{\text{spec}}}$$
+   $$\text{TPOT} = \frac{B_{\text{weights}} + B_{\text{KV-cache}}(N_{\text{seq}})}{\text{BW}_{\text{mem}} \cdot \gamma_{\text{spec}}}$$
    - $\text{BW}_{\text{mem}}$: Aggregate HBM memory bandwidth ($\text{TB/s}$).
    - $\gamma_{\text{spec}}$: Speculative decoding acceleration factor ($1.0 \le \gamma_{\text{spec}} \le 2.8$ depending on draft model alignment).
 
@@ -147,7 +147,7 @@ xychart-beta
 When testing deployment to constrained edge devices (e.g., Apple Silicon M-series, Nvidia Jetson Orin, Raspberry Pi 5 NPU), the simulator models:
 
 1. **Total VRAM Footprint ($M_{\text{total}}$)**:
-   $$M_{\text{total}} = \left( P_{\text{params}} \cdot \frac{b_{\text{model}}}{8} \cdot 1.15 \right) + \left( 2 \cdot L \cdot H_{\text{kv}} \cdot D_{\text{head}} \cdot S_{\text{ctx}} \cdot \frac{b_{\text{kv}}}{8} \cdot B_{\text{batch}} \right) + M_{\text{runtime\_overhead}}$$
+   $$M_{\text{total}} = \left( P_{\text{params}} \cdot \frac{b_{\text{model}}}{8} \cdot 1.15 \right) + \left( 2 \cdot L \cdot H_{\text{kv}} \cdot D_{\text{head}} \cdot S_{\text{ctx}} \cdot \frac{b_{\text{kv}}}{8} \cdot B_{\text{batch}} \right) + M_{\text{runtime-overhead}}$$
    - Quantization precisions: $\text{FP32 } (b=32)$, $\text{FP16/BF16 } (b=16)$, $\text{INT8 } (b=8)$, $\text{INT4/AWQ/GGUF } (b=4)$.
 2. **Thermal Throttling Model**:
    If continuous TDP power dissipation exceeds device thermal envelope ($T > T_{\text{threshold}} = 85^\circ\text{C}$):

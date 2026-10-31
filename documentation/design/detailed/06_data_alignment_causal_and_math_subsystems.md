@@ -92,23 +92,23 @@ In 2026, ML practitioners must distinguish correlation from causation. The platf
 ### 4.1 Causal DAG Canvas & Pearl's Backdoor Criterion
 
 ```mermaid
-graph TD
+flowchart TD
     UserAge["User Age (Z: Confounder)"] --> AdExposure["Ad Exposure (Treatment: T)"]
     UserAge --> Purchase["Purchase Amount (Outcome: Y)"]
     AdExposure --> CartAdd["Add to Cart (Mediator: M)"]
     CartAdd --> Purchase
-    DeviceType["Device Type (Collider: C)"] <-- AdExposure
-    DeviceType <-- Purchase
+    AdExposure --> DeviceType["Device Type (Collider: C)"]
+    Purchase --> DeviceType
 
-    classDef confounder fill:#f59e0b,stroke:#d97706,color:#fff;
-    classDef collider fill:#ef4444,stroke:#dc2626,color:#fff;
-    classDef treatment fill:#3b82f6,stroke:#2563eb,color:#fff;
-    classDef outcome fill:#10b981,stroke:#059669,color:#fff;
+    classDef confounder fill:#f59e0b,stroke:#d97706,color:#fff
+    classDef collider fill:#ef4444,stroke:#dc2626,color:#fff
+    classDef treatment fill:#3b82f6,stroke:#2563eb,color:#fff
+    classDef outcome fill:#10b981,stroke:#059669,color:#fff
 
-    class UserAge confounder;
-    class DeviceType collider;
-    class AdExposure treatment;
-    class Purchase outcome;
+    class UserAge confounder
+    class DeviceType collider
+    class AdExposure treatment
+    class Purchase outcome
 ```
 
 #### Diagnostic Rules Checked by the WASM Engine:

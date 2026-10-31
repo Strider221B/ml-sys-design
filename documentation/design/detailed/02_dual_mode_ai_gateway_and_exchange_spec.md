@@ -41,7 +41,7 @@ stateDiagram-v2
     ManualExportFlow --> ValidateSchema: Manual Input Provided
 
     state ValidateSchema {
-        [*] --> ParseJSON: Strip Markdown ```json code blocks
+        [*] --> ParseJSON: Strip Markdown code blocks
         ParseJSON --> ZodValidation: Validate against Module Zod Schema
         ZodValidation --> PassValidation: Schema Matches
         ZodValidation --> FailValidation: ValidationError (Field Missing/Invalid Type)
@@ -145,15 +145,15 @@ The `ResponseValidator` executes a 4-stage pipeline before rejecting a payload:
 
 ```mermaid
 flowchart TD
-    RawInput["Raw User Text Input"] --> S1["Stage 1: Markdown Fence Stripper\nExtract contents inside ```json ... ``` or outermost { ... }"]
+    RawInput["Raw User Text Input"] --> S1["Stage 1: Markdown Fence Stripper\nExtract contents inside JSON code fences or outermost object"]
     S1 --> S2["Stage 2: Lenient JSON Sanitizer\nStrip trailing commas, convert single quotes, balance brackets"]
     S2 --> S3["Stage 3: JSON.parse() Deserialization"]
     
-    S3 -- "Syntax Error" --> RepairGen["Generate JSON Repair Prompt\nShow syntax error line & character position"]
+    S3 -->|"Syntax Error"| RepairGen["Generate JSON Repair Prompt\nShow syntax error line & character position"]
     
-    S3 -- "Valid JSON" --> S4["Stage 4: Zod Schema Structural Validation"]
-    S4 -- "Schema Matches" --> Success["Valid Payload Hydrated into Zustand Store"]
-    S4 -- "Zod Issues Found" --> SchemaError["Generate Schema Correction Prompt\nHighlight exact missing keys or type mismatches"]
+    S3 -->|"Valid JSON"| S4["Stage 4: Zod Schema Structural Validation"]
+    S4 -->|"Schema Matches"| Success["Valid Payload Hydrated into Zustand Store"]
+    S4 -->|"Zod Issues Found"| SchemaError["Generate Schema Correction Prompt\nHighlight exact missing keys or type mismatches"]
 
     RepairGen --> ModalUI["Display Error Modal with 'Copy Fix Prompt' Button"]
     SchemaError --> ModalUI

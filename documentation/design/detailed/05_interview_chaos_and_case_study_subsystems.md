@@ -126,11 +126,11 @@ sequenceDiagram
     
     Note over Researcher,Coder: Infinite Execution Loop Initiated
     
-    Breaker->>Breaker: Cycle Counter: 2 -> 3 -> 4
-    Breaker->>Breaker: Cosine Similarity between thoughts: 0.98 (> 0.95 threshold)
+    Breaker->>Breaker: Cycle counter increments (cycles 2 to 4)
+    Breaker->>Breaker: Cosine similarity between thoughts is 0.98 (exceeds 0.95 threshold)
     
     alt Circuit Breaker Inactive
-        Researcher->>Coder: Continues loop -> API Budget Drained -> Crash!
+        Researcher->>Coder: Continues loop, drains API budget, and crashes
     else Circuit Breaker Configured Correctly
         Breaker->>Supervisor: HALT_CASCADE: Tripped by Similarity & MaxIteration(4)
         Supervisor-->>User: Graceful Degradation: "System unable to resolve query"
