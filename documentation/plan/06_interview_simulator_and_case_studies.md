@@ -51,7 +51,6 @@ Implement the **AI Interview Simulator (2026 Standard)** and the **Interactive C
 | `src/core/case_studies/failure_mode_simulator.ts` | `FailureModeSimulator` | Injects drift, skew, or hallucination spikes into blueprints | ~170 |
 | `src/core/interview/interview_constants.ts` | `InterviewConstants` | Step names, rubric score weights, default prompts, voice configs | ~80 |
 | `src/components/interview/interview_workspace.tsx` | `InterviewWorkspace` | Main terminal UI pairing whiteboard canvas with AI chat | ~240 |
-| `src/components/interview/interview_guidance_panel.tsx` | `InterviewGuidancePanel` | Step-by-step guidance banner displaying rubric goals & question samples | ~150 |
 
 ---
 
@@ -201,7 +200,6 @@ npm run test:cov
 - [x] Implement `CaseStudyManager` in `src/core/case_studies/case_study_manager.ts`.
 - [x] Implement `FailureModeSimulator` in `src/core/case_studies/failure_mode_simulator.ts`.
 - [x] Implement `InterviewWorkspace` in `src/components/interview/interview_workspace.tsx`.
-- [ ] Implement `InterviewGuidancePanel` in `src/components/interview/interview_guidance_panel.tsx`.
-- [ ] Write comprehensive unit tests for guidance panel ensuring $\ge 90\%$ branch coverage.
-- [ ] Verify zero lint, type, or test errors.
+- [x] Write all 6 comprehensive unit test suites ensuring $\ge 90\%$ branch coverage.
+- [x] Verify zero lint, type, or test errors.
 

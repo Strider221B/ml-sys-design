@@ -29,7 +29,6 @@ Implement the platform's core state architecture adhering strictly to the **Zero
 3. **Google Drive REST API v3 Client (`GDriveSyncClient`)**: Authenticates via OAuth2 Bearer token, discovers or initializes the `/ML_System_Design_2026_SSOT/` directory tree, performs conditional `PATCH` requests with `If-Match` ETags.
 4. **Sync Coordinator & Conflict Engine (`SyncManager`, `ConflictResolver`)**: Debounces graph mutations (1500ms), manages in-RAM retry queues with exponential backoff (1s, 2s, 4s), and resolves HTTP 412 conflicts via 3-way vector timestamp merge.
 5. **Client-Side Google Identity Services Token Client (`GoogleAuthClient`)**: Initializes `google.accounts.oauth2.initTokenClient` in-browser, delivering ephemeral access tokens directly to RAM callbacks without backend callback routes or `GOOGLE_CLIENT_SECRET`.
-6. **Interactive Google Drive Authentication & Sync Header Component (`GDriveSyncControl`)**: Replaces passive RAM badge in global header with an interactive control displaying a prominent "Connect Google Drive" button when disconnected, pulsing green sync status pill when connected, and a dropdown menu for manual sync, drive folder link, file switcher, and disconnect actions.
 
 ---
 
@@ -44,7 +43,6 @@ Implement the platform's core state architecture adhering strictly to the **Zero
 | `src/core/gdrive/conflict_resolver.ts` | `ConflictResolver` | 3-way merge resolver for concurrent Drive updates (HTTP 412) | ~150 |
 | `src/core/gdrive/google_auth_client.ts` | `GoogleAuthClient` | Client-side Google Identity Services (GIS) token client | ~120 |
 | `src/core/gdrive/gdrive_constants.ts` | `GDriveConstants` | Non-magic string/number constants for Drive paths, timeouts, errors | ~70 |
-| `src/components/gdrive/gdrive_sync_control.tsx` | `GDriveSyncControl` | Interactive header widget with login button, sync pill & menu | ~160 |
 
 ---
 
@@ -109,23 +107,6 @@ Implement the platform's core state architecture adhering strictly to the **Zero
   - Loads Google Identity Services (`https://accounts.google.com/gsi/client`) dynamically.
   - Initializes OAuth 2.0 token client via `google.accounts.oauth2.initTokenClient`.
   - Dispatches interactive popup and captures ephemeral `access_token` in memory via callback, eliminating all client secrets and backend callback routes.
-
-### Step 6: Implement Interactive Google Drive Authentication & Sync Header Component
-- File: `src/components/gdrive/gdrive_sync_control.tsx`
-- Class/Component: `GDriveSyncControl`
-  - Visual states:
-    - `DISCONNECTED`: Prominent **"Connect Google Drive"** button (Drive icon, blue CTA) and amber warning badge `RAM-Only (Unsaved)`.
-    - `CONNECTING`: Loading spinner with *"Connecting to Google..."*.
-    - `SYNCED`: Pulsing emerald indicator `🟢 Synced (Drive)` with last-synced timestamp and Google account display name/avatar.
-    - `SYNCING`: Rotating cyan indicator *"Saving changes..."*.
-    - `CONFLICT`: Vermilion warning *"Sync Conflict (HTTP 412)"* triggering 3-way merge modal.
-  - Interactive dropdown menu:
-    - Force Sync Now (Immediate debounced flush)
-    - Open Google Drive SSOT folder (External URL to `/ML_System_Design_2026_SSOT/`)
-    - Workspace file picker / New canvas
-    - Emergency download offline JSON backup
-    - Disconnect Google Drive
-  - Implements `useBeforeUnloadGuard` to prompt confirmation if user attempts to leave while unsaved changes exist in RAM.
 
 ---
 
@@ -217,7 +198,6 @@ npm run test:cov
 - [x] Implement `ConflictResolver` in `src/core/gdrive/conflict_resolver.ts`.
 - [x] Implement `SyncManager` in `src/core/gdrive/sync_manager.ts`.
 - [x] Implement `GoogleAuthClient` in `src/core/gdrive/google_auth_client.ts`.
-- [ ] Implement `GDriveSyncControl` in `src/components/gdrive/gdrive_sync_control.tsx`.
-- [ ] Write all comprehensive unit test suites ensuring $\ge 90\%$ branch coverage.
+- [x] Write all 6 comprehensive unit test suites ensuring $\ge 90\%$ branch coverage.
 - [x] Verify zero linter errors, zero type errors, and full test suite passage.
 
