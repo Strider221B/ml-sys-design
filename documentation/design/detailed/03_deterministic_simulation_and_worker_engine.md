@@ -15,7 +15,7 @@ To fulfill these non-functional requirements, the compute layer is partitioned a
 
 ```mermaid
 graph TB
-    subgraph Main_Thread["Browser Main Thread (React 19 UI)"]
+    subgraph Main_Thread["Browser Main Thread (React 19.3 UI)"]
         UI["React Canvas & Controls"]
         Store["Zustand In-Memory Store"]
         ComlinkClient["Comlink RPC Client Proxy"]

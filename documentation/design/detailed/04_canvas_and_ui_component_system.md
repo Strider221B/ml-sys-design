@@ -117,7 +117,7 @@ flowchart TD
 
     subgraph DOM_Thread["Main UI Thread"]
         CanvasContainer["HTML5 Canvas Container Element"]
-        ReactUI["React 19 Shell\n(Zero Re-render overhead)"]
+        ReactUI["React 19.3 Shell\n(Zero Re-render overhead)"]
     end
 
     subgraph GPU_Render["OffscreenCanvas Worker Context"]

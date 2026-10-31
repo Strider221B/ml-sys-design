@@ -37,7 +37,7 @@ It synthesizes the requirements from [000_requirements.md](file:///home/somesh/g
      - **Air-Gap Manual Fallback**: One-click generation of a standardized `LLMExchangeEnvelope` containing system instructions, structured context, and target JSON schemas, paired with a client-side JSON parser and Zod schema validator that ingests external LLM responses seamlessly.
 
 3. **Strict Separation of Concerns & Unidirectional Data Flow**:
-   - UI components (React 19) interact purely with an in-memory `Zustand` store.
+   - UI components (React 19.3) interact purely with an in-memory `Zustand` store.
    - Heavy calculations offload asynchronously to the Web Worker pool via `Comlink` RPC.
    - Telemetry profiling uses a high-performance rendering loop with `OffscreenCanvas` and `Transferable` typed arrays, preventing React re-render thrashing.
 
@@ -56,7 +56,7 @@ graph TB
     User["ML Engineer / Student / Candidate"]
     
     subgraph Platform["ML System Design 2026 Platform"]
-        WebClient["Web Client Application\n(Next.js App Router / React 19 / WASM / Web Workers)"]
+        WebClient["Web Client Application\n(Next.js 16.4 App Router / React 19.3 / WASM / Web Workers)"]
         EdgeBroker["Stateless Edge Broker\n(Vercel Edge / Local Node.js API)"]
     end
 

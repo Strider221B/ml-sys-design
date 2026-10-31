@@ -7,7 +7,7 @@
 > - Detailed Design: [detailed/](file:///home/somesh/git_repos/ml-sys-design/documentation/design/detailed/) (00 to 09)  
 > - Coding Standards: [coding_standards.md](file:///home/somesh/git_repos/ml-sys-design/documentation/prompts/coding_standards.md)  
 > **Python Virtual Environment:** `source ~/python_envs/p313_llm/bin/activate` (Python 3.13)  
-> **Node/TypeScript Runtime:** Node.js 22 LTS / Next.js 15+ App Router
+> **Node/TypeScript Runtime:** Node.js 24 LTS / Next.js 16.4+ App Router (React 19.3, Tailwind CSS 3.4)
 
 ---
 
@@ -43,7 +43,7 @@ source ~/python_envs/p313_llm/bin/activate
 
 | Plan File | Phase Title | Core Objectives | Detailed Design Cross-Ref | Estimated Effort |
 | :--- | :--- | :--- | :--- | :--- |
-| [01_project_scaffolding_and_tooling.md](file:///home/somesh/git_repos/ml-sys-design/documentation/plan/01_project_scaffolding_and_tooling.md) | **Phase 1: Project Foundation & Tooling** | Workspace scaffolding, Next.js 15+ App Router, TypeScript strict mode, Tailwind CSS, Python Pyodide/backend test tooling (`pyproject.toml`, `ruff`, `mypy`, `pytest`), coding standards linters, core exchange & scenario types. | `00_overview`, `09_isomorphic` | 1-2 Days |
+| [01_project_scaffolding_and_tooling.md](file:///home/somesh/git_repos/ml-sys-design/documentation/plan/01_project_scaffolding_and_tooling.md) | **Phase 1: Project Foundation & Tooling** | Workspace scaffolding, Next.js 16.4+ App Router, TypeScript strict mode, Tailwind CSS 3.4, Python Pyodide/backend test tooling (`pyproject.toml`, `ruff`, `mypy`, `pytest`), coding standards linters, core exchange & scenario types. | `00_overview`, `09_isomorphic` | 1-2 Days |
 | [02_ephemeral_state_and_gdrive_ssot.md](file:///home/somesh/git_repos/ml-sys-design/documentation/plan/02_ephemeral_state_and_gdrive_ssot.md) | **Phase 2: Ephemeral State & Google Drive SSOT** | RAM-only Zustand store, runtime `StorageSanitizer`, Google OAuth2 PKCE Edge route, `GDriveSyncClient`, debounced diffing (`SyncManager`), ETag 3-way merge conflict resolution. | `01_state_management` | 2-3 Days |
 | [03_dual_mode_ai_gateway_and_exchange.md](file:///home/somesh/git_repos/ml-sys-design/documentation/plan/03_dual_mode_ai_gateway_and_exchange.md) | **Phase 3: Dual-Mode AI Gateway & Exchange Engine** | Unified `LLMOrchestrator`, direct Gemini Free Tier client, prompt envelope exporter (JSON + Markdown), schema-validated response importer (Zod, `jsonrepair`, schema repair), air-gap modal UI. | `02_dual_mode_ai_gateway` | 2-3 Days |
 | [04_deterministic_simulation_and_worker_engine.md](file:///home/somesh/git_repos/ml-sys-design/documentation/plan/04_deterministic_simulation_and_worker_engine.md) | **Phase 4: Deterministic Sim & Web Worker Engine** | Comlink Web Worker controller, $M/G/c$ queuing theory latency engine, TTFT/TPOT latency calculator, Roofline hardware model (H100/TPU/MI300X), FinOps compute budget simulator. Sub-100ms SLA. | `03_deterministic_sim` | 2-3 Days |

@@ -19,7 +19,7 @@ graph TB
     end
 
     subgraph Host_Environments["Isomorphic Hosting Environments"]
-        LocalHost["Local Machine (Node.js 22 LTS / Docker)"]
+        LocalHost["Local Machine (Node.js 24 LTS / Docker)"]
         VercelEdge["Vercel Global Edge Network (Vercel Serverless/Edge)"]
     end
 
@@ -144,7 +144,7 @@ services:
 
 ```dockerfile
 # Build Stage
-FROM node:22-alpine AS builder
+FROM node:24-alpine AS builder
 WORKDIR /app
 COPY package*.json ./
 RUN npm ci
@@ -153,7 +153,7 @@ ENV NEXT_TELEMETRY_DISABLED=1
 RUN npm run build
 
 # Runner Stage
-FROM node:22-alpine AS runner
+FROM node:24-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1

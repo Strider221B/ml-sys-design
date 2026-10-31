@@ -15,7 +15,7 @@
 Establish the complete project foundation, isomorphic directory structure, static analysis toolchains, and strict coding standards enforcement scripts across both the Next.js (TypeScript) runtime and the Python 3.13 scientific runtime.
 
 ### Core Deliverables
-1. **Next.js 15+ App Router & TypeScript Configuration**: Strict `tsconfig.json` (`noImplicitAny`, `strictNullChecks`, `exactOptionalPropertyTypes`), Tailwind CSS, and path aliases (`@/*`).
+1. **Next.js 16.4+ App Router & TypeScript Configuration**: Strict `tsconfig.json` (`noImplicitAny`, `strictNullChecks`, `exactOptionalPropertyTypes`), Tailwind CSS 3.4, and path aliases (`@/*`).
 2. **Python Scientific & Worker Toolchain**: `pyproject.toml` configured with `ruff` (line length 100, rules `E`, `W`, `F`, `I`), `mypy` (`strict = true`), and `pytest` (`--cov`, `fail_under = 90`).
 3. **Coding Standards Verification Scripts**: Automated AST linters in TypeScript and Python that strictly enforce:
    - One Class Per File (file name matches class name)
@@ -32,7 +32,7 @@ Establish the complete project foundation, isomorphic directory structure, stati
 
 | File Path | Primary Class / Type | Responsibility | Est. Lines |
 | :--- | :--- | :--- | :--- |
-| `package.json` | Manifest | NPM dependencies (Next.js, React 19, Zustand, Zod, Comlink, Lucide, Tailwind, Vitest) | ~70 |
+| `package.json` | Manifest | NPM dependencies (Next.js 16.4, React 19.3, Zustand 5, Zod 3, Comlink, Lucide, Tailwind 3.4, Vitest) | ~70 |
 | `tsconfig.json` | Config | Strict TypeScript configuration with path aliases | ~35 |
 | `pyproject.toml` | Config | Python packaging, dependencies (numpy, scipy, pytest, ruff, mypy), coverage config | ~80 |
 | `scripts/standards_validator.ts` | `StandardsValidator` | AST validator for TypeScript files verifying class-per-file, ordering, method length | ~220 |
@@ -48,8 +48,8 @@ Establish the complete project foundation, isomorphic directory structure, stati
 
 ### Step 1: Scaffolding Package Manifests & Tooling
 - Initialize `package.json` with dependencies:
-  - Core: `next@15.0.0`, `react@19.0.0`, `react-dom@19.0.0`, `zustand@5.0.0`, `zod@3.23.0`, `comlink@4.4.1`, `@xyflow/react@12.3.0`, `jsonrepair@3.8.0`, `lucide-react@0.450.0`, `js-yaml@4.1.0`.
-  - Dev: `typescript@5.6.0`, `vitest@2.1.0`, `@testing-library/react@16.0.0`, `@testing-library/jest-dom@6.5.0`, `eslint@9.0.0`, `prettier@3.3.0`, `tailwindcss@3.4.0`.
+  - Core: `next@^16.4.3`, `react@^19.3.1`, `react-dom@^19.3.1`, `zustand@^5.0.16`, `zod@^3.23.8`, `comlink@^4.4.1`, `@xyflow/react@^12.12.0`, `jsonrepair@^3.8.0`, `lucide-react@^1.65.0`, `js-yaml@^4.1.0`.
+  - Dev: `typescript@^5.6.3`, `vitest@^2.1.3`, `@testing-library/react@^16.0.0`, `@testing-library/jest-dom@^6.5.0`, `eslint@^9.13.0`, `prettier@^3.3.3`, `tailwindcss@^3.4.19`.
 - Initialize `pyproject.toml` with:
   - `[project]` dependencies: `numpy>=2.0.0`, `scipy>=1.14.0`.
   - `[tool.ruff]`: `line-length = 100`, `lint.select = ["E", "W", "F", "I"]`.
