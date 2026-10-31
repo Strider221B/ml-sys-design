@@ -1,5 +1,3 @@
-import fs from 'node:fs';
-import path from 'node:path';
 import yaml from 'js-yaml';
 import { GDriveSyncClient } from '@/core/gdrive/gdrive_sync_client';
 import { ScenarioConstants } from '@/core/scenarios/scenario_constants';
@@ -119,10 +117,14 @@ export class ScenarioLoader {
       return null;
     }
     try {
+      const getModule = (process as unknown as { getBuiltinModule?: (name: string) => unknown }).getBuiltinModule;
+      if (typeof getModule !== 'function') return null;
+      const fsMod = getModule('node:fs') as { existsSync: (p: string) => boolean; readFileSync: (p: string, enc: string) => string };
+      const pathMod = getModule('node:path') as { join: (...args: string[]) => string };
       const cleaned = filePath.startsWith('/') ? filePath.slice(1) : filePath;
-      const fullPath = path.join(process.cwd(), 'public', cleaned);
-      if (fs.existsSync(fullPath)) {
-        return fs.readFileSync(fullPath, 'utf-8');
+      const fullPath = pathMod.join(process.cwd(), 'public', cleaned);
+      if (fsMod.existsSync(fullPath)) {
+        return fsMod.readFileSync(fullPath, 'utf-8');
       }
     } catch {
       return null;
