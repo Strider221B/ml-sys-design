@@ -12,7 +12,7 @@ source ~/python_envs/p313_llm/bin/activate
 Feature:
 
 Design:
-./documentation/design/high_level
+./documentation/design/detailed
 
 Ensure you read:
 ./documentation/prompts/coding_standards.md
