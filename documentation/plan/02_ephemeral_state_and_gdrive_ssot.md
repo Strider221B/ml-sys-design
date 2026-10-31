@@ -28,7 +28,7 @@ Implement the platform's core state architecture adhering strictly to the **Zero
      - Optimistic cloud sync UI indicators powered by React 19 `useOptimistic` with automatic rollback on sync failure or HTTP 412 conflict.
 3. **Google Drive REST API v3 Client (`GDriveSyncClient`)**: Authenticates via OAuth2 Bearer token, discovers or initializes the `/ML_System_Design_2026_SSOT/` directory tree, performs conditional `PATCH` requests with `If-Match` ETags.
 4. **Sync Coordinator & Conflict Engine (`SyncManager`, `ConflictResolver`)**: Debounces graph mutations (1500ms), manages in-RAM retry queues with exponential backoff (1s, 2s, 4s), and resolves HTTP 412 conflicts via 3-way vector timestamp merge.
-5. **Stateless Google OAuth PKCE Edge Route**: `/api/auth/google/callback` exchanging PKCE code for access tokens directly to browser memory.
+5. **Client-Side Google Identity Services Token Client (`GoogleAuthClient`)**: Initializes `google.accounts.oauth2.initTokenClient` in-browser, delivering ephemeral access tokens directly to RAM callbacks without backend callback routes or `GOOGLE_CLIENT_SECRET`.
 
 ---
 
@@ -41,7 +41,7 @@ Implement the platform's core state architecture adhering strictly to the **Zero
 | `src/core/gdrive/gdrive_sync_client.ts` | `GDriveSyncClient` | Google Drive REST API v3 HTTP client with multipart upload | ~240 |
 | `src/core/gdrive/sync_manager.ts` | `SyncManager` | Debounced auto-sync coordinator and RAM dirty queue manager | ~220 |
 | `src/core/gdrive/conflict_resolver.ts` | `ConflictResolver` | 3-way merge resolver for concurrent Drive updates (HTTP 412) | ~150 |
-| `src/app/api/auth/google/callback/route.ts` | `GoogleAuthEdgeHandler` | Stateless Edge route exchanging Google OAuth PKCE auth code | ~130 |
+| `src/core/gdrive/google_auth_client.ts` | `GoogleAuthClient` | Client-side Google Identity Services (GIS) token client | ~120 |
 | `src/core/gdrive/gdrive_constants.ts` | `GDriveConstants` | Non-magic string/number constants for Drive paths, timeouts, errors | ~70 |
 
 ---
@@ -97,12 +97,16 @@ Implement the platform's core state architecture adhering strictly to the **Zero
   - Public method: `resolve(localDoc: WorkspaceDocument, remoteDoc: WorkspaceDocument): MergeResult`
   - Compares node/edge modified timestamps and produces an amalgamated graph or prompts user merge resolution.
 
-### Step 5: Implement Google OAuth PKCE Edge Handler
-- File: `src/app/api/auth/google/callback/route.ts`
-- Class: `GoogleAuthEdgeHandler`
-  - Public method: `handlePost(req: NextRequest): Promise<NextResponse>`
-  - Verifies `code`, `codeVerifier`, and `redirectUri`.
-  - Fetches tokens from `https://oauth2.googleapis.com/token` and returns JSON payload without persistent cookies or server disk writes.
+### Step 5: Implement Client-Side Google Identity Services Auth Client
+- File: `src/core/gdrive/google_auth_client.ts`
+- Class: `GoogleAuthClient`
+  - Public methods:
+    - `initialize(clientId: string): Promise<void>`
+    - `requestAccessToken(): Promise<string>`
+    - `revokeToken(token: string): Promise<void>`
+  - Loads Google Identity Services (`https://accounts.google.com/gsi/client`) dynamically.
+  - Initializes OAuth 2.0 token client via `google.accounts.oauth2.initTokenClient`.
+  - Dispatches interactive popup and captures ephemeral `access_token` in memory via callback, eliminating all client secrets and backend callback routes.
 
 ---
 
@@ -193,7 +197,7 @@ npm run test:cov
 - [ ] Implement `GDriveSyncClient` in `src/core/gdrive/gdrive_sync_client.ts`.
 - [ ] Implement `ConflictResolver` in `src/core/gdrive/conflict_resolver.ts`.
 - [ ] Implement `SyncManager` in `src/core/gdrive/sync_manager.ts`.
-- [ ] Implement `GoogleAuthEdgeHandler` in `src/app/api/auth/google/callback/route.ts`.
+- [ ] Implement `GoogleAuthClient` in `src/core/gdrive/google_auth_client.ts`.
 - [ ] Write all 6 comprehensive unit test suites ensuring $\ge 90\%$ branch coverage.
 - [ ] Verify zero linter errors, zero type errors, and full test suite passage.
 

@@ -68,8 +68,8 @@ graph TB
     end
 
     User -->|Interacts via Canvas, Voice, Keyboard| WebClient
-    WebClient <-->|Stateless OAuth Token Exchange| EdgeBroker
-    EdgeBroker <-->|OAuth2 PKCE / Token Grant| GDrive
+    WebClient <-->|OAuth 2.0 GIS Token Client (RAM Token)| GDrive
+    WebClient <-->|Stateless OAuth Exchange| EdgeBroker
     EdgeBroker <-->|OAuth2 Token Grant| GitHub
 
     WebClient <-->|REST API v3: JSON State Sync| GDrive
@@ -212,7 +212,6 @@ ml-sys-design/
 │   │   │   └── curriculum/page.tsx
 │   │   ├── api/
 │   │   │   ├── auth/
-│   │   │   │   ├── google/callback/route.ts
 │   │   │   │   └── github/callback/route.ts
 │   │   │   └── gemini/
 │   │   │       └── proxy/route.ts
@@ -224,6 +223,7 @@ ml-sys-design/
 │   │   │   ├── slices/                  # Modular store slices (canvas, interview, finops, etc.)
 │   │   │   └── types.ts
 │   │   ├── gdrive/
+│   │   │   ├── google-auth-client.ts    # Google Identity Services (GIS) Token Client
 │   │   │   ├── drive-client.ts          # Google Drive API v3 client
 │   │   │   ├── sync-manager.ts          # Debounced diff, etag tracking, conflict resolution
 │   │   │   └── drive-types.ts
