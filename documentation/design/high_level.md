@@ -22,16 +22,16 @@ To satisfy the deployment constraints (**Local Machine + Vercel Hosting**), stat
 graph TB
     subgraph Client_Browser["Client Browser (Zero Permanent Local Storage)"]
         direction TB
-        UI["UI Layer (React 19 + Tailwind + WCAG 2.1 Accessible Canvas)"]
-        Canvas["Interactive Drag & Drop Canvas (ReactFlow / Custom WebGL)"]
+        UI["UI Layer (React 19.3 + Tailwind CSS 3.4 + WCAG 2.1 Accessible Canvas)"]
+        Canvas["Interactive Drag & Drop Canvas (@xyflow/react 12.12 / Custom WebGL)"]
         Telemetry["60 FPS Visual Profiler & Grafana Dashboard (Canvas2D / WebGL)"]
-        Store["Volatile RAM State (Zustand In-Memory Store)"]
+        Store["Volatile RAM State (Zustand 5.0 In-Memory Store)"]
         
         subgraph Web_Workers["Background Compute Engine (Web Workers + WASM)"]
             SimEngine["Deterministic Simulation & Trade-Off Engine (<100ms)"]
             ChaosEngine["Chaos Monkey & Failure Mode Engine"]
             FinOpsCalc["FinOps & GPU/TPU Unit Economics Profiler"]
-            MathSandbox["Reward Function, Causal DAG & Data Contamination Engine (Pyodide/WASM)"]
+            MathSandbox["Reward Function, Causal DAG & Data Contamination Engine (Pyodide Python 3.13 / NumPy 2.0)"]
         end
 
         subgraph Gateways["Client Synchronization & AI Gateways"]

@@ -110,8 +110,9 @@ Implement the **AI Interview Simulator (2026 Standard)** and the **Interactive C
 
 ### Step 5: Implement Interview & Case-Study UI Workspace
 - File: `src/components/interview/interview_workspace.tsx`
-  - Renders side-by-side view: interactive canvas on left, interviewer chat & step timeline on right.
-  - Displays step progression, rubric scorecards, and air-gap exchange button.
+  - Renders side-by-side view: `@xyflow/react` 12.12 interactive whiteboard canvas on left, interviewer chat & 6-step timeline on right.
+  - Utilizes Zustand 5.0 `useShallow` selectors to subscribe selectively to interview step state, active blueprint metrics, and rubric evaluation scores.
+  - Displays step progression, rubric scorecards, and air-gap exchange modal trigger button.
 
 ---
 

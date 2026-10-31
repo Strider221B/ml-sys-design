@@ -37,7 +37,7 @@ It synthesizes the requirements from [000_requirements.md](file:///home/somesh/g
      - **Air-Gap Manual Fallback**: One-click generation of a standardized `LLMExchangeEnvelope` containing system instructions, structured context, and target JSON schemas, paired with a client-side JSON parser and Zod schema validator that ingests external LLM responses seamlessly.
 
 3. **Strict Separation of Concerns & Unidirectional Data Flow**:
-   - UI components (React 19) interact purely with an in-memory `Zustand` store.
+   - UI components (React 19.3 + `@xyflow/react` 12.12) interact purely with an in-memory `Zustand 5.0` store.
    - Heavy calculations offload asynchronously to the Web Worker pool via `Comlink` RPC.
    - Telemetry profiling uses a high-performance rendering loop with `OffscreenCanvas` and `Transferable` typed arrays, preventing React re-render thrashing.
 
@@ -56,7 +56,7 @@ graph TB
     User["ML Engineer / Student / Candidate"]
     
     subgraph Platform["ML System Design 2026 Platform"]
-        WebClient["Web Client Application\n(Next.js App Router / React 19 / WASM / Web Workers)"]
+        WebClient["Web Client Application\n(Next.js 16.4 App Router / React 19.3 / WASM / Web Workers)"]
         EdgeBroker["Stateless Edge Broker\n(Vercel Edge / Local Node.js API)"]
     end
 
@@ -85,20 +85,20 @@ graph TB
 graph TB
     subgraph Browser_Runtime["Browser Client Runtime (Zero Local Disk/Storage Persistence)"]
         subgraph UI_Presentation["Presentation & Interaction Layer"]
-            CanvasUI["Interactive Architecture Canvas\n(React Flow / Custom WebGL)"]
+            CanvasUI["Interactive Architecture Canvas\n(@xyflow/react 12.12 / Custom WebGL)"]
             TelemetryUI["Telemetry & Profiler Dashboard\n(Canvas2D / WebGL2 / 60 FPS)"]
             InterviewUI["6-Step Interview Terminal\n(Voice Web Speech + Graph Exporter)"]
             ModuleViews["Curriculum, FinOps, Chaos, Causal & Math Views"]
         end
 
         subgraph In_Memory_Store["Volatile State Layer"]
-            RAMStore["Zustand In-Memory Store\n(Workspace Graph, Node Metrics, Telemetry Rings)"]
+            RAMStore["Zustand 5.0 In-Memory Store\n(Workspace Graph, Node Metrics, Telemetry Rings)"]
         end
 
         subgraph Worker_Pool["Compute Engine (Web Workers & WASM)"]
             WorkerRPC["Comlink RPC Controller"]
             SimWorker["Deterministic Trade-Off Worker\n(M/G/c Queuing, Latency, FinOps)"]
-            PyodideWorker["Pyodide WASM Runtime\n(Reward Functions, Causal ATE, MinHash LSH)"]
+            PyodideWorker["Pyodide WASM Runtime (Python 3.13 + NumPy 2.0)\n(Reward Functions, Causal ATE, MinHash LSH)"]
         end
 
         subgraph Client_Services["Client Integration Services"]

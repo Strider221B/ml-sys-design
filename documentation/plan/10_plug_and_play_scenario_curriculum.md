@@ -18,6 +18,7 @@ Implement the extensible **Plug-and-Play Scenario Engine** and load the comprehe
 1. **Plug-and-Play Scenario Loader (`ScenarioLoader`, `ScenarioPluginSchema`)**:
    - Parses and validates declarative scenario manifests against `ScenarioPluginSchema`.
    - Supports dual loading: from bundled local static files (`public/scenarios/`) and from the user's Google Drive SSOT folder (`/ML_System_Design_2026_SSOT/schemas/`).
+   - Supports `@xyflow/react` 12.12 canvas definitions, including hierarchical subflows (`parentId`) and interactive custom edge badges.
 2. **Three Production Reference Blueprints**:
    - `blueprint_ecommerce_ranking.yaml`: Personalized retrieval and cross-encoder re-ranking.
    - `blueprint_streaming_fraud.yaml`: Millisecond fraud detection with Kafka, Flink, and Feast.

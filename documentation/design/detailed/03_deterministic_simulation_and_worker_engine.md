@@ -15,7 +15,7 @@ To fulfill these non-functional requirements, the compute layer is partitioned a
 
 ```mermaid
 graph TB
-    subgraph Main_Thread["Browser Main Thread (React 19 UI)"]
+    subgraph Main_Thread["Browser Main Thread (React 19.3 UI)"]
         UI["React Canvas & Controls"]
         Store["Zustand In-Memory Store"]
         ComlinkClient["Comlink RPC Client Proxy"]
@@ -29,7 +29,7 @@ graph TB
     end
 
     subgraph Worker_Thread_2["Web Worker: PyodideWASMWorker (<60ms)"]
-        PyodideCore["Pyodide WebAssembly Python 3.12"]
+        PyodideCore["Pyodide WebAssembly\n(Python 3.13 + NumPy 2.0 SIMD)"]
         RewardSandbox["Reward Function & Goodhart Simulator"]
         CausalEngine["Causal DAG & CUPED Variance Engine"]
         EntropyAuditor["MinHash LSH & Shannon Entropy Engine"]
@@ -250,6 +250,32 @@ export class DeterministicSimWorker {
 }
 
 Comlink.expose(new DeterministicSimWorker());
+```
+
+### 4.2 Next.js 16.4 Native Worker Instantiation
+
+Next.js 16.4 provides native ES module Web Worker bundling without third-party plugins:
+
+```typescript
+// src/core/workers/sim-client.ts
+
+import * as Comlink from 'comlink';
+import type { DeterministicSimWorker } from '../../workers/deterministic-sim.worker';
+
+export class SimWorkerClient {
+  private static instance: Comlink.Remote<DeterministicSimWorker> | null = null;
+
+  public static getWorker(): Comlink.Remote<DeterministicSimWorker> {
+    if (!this.instance && typeof window !== 'undefined') {
+      const worker = new Worker(
+        new URL('../../workers/deterministic-sim.worker.ts', import.meta.url),
+        { type: 'module' }
+      );
+      this.instance = Comlink.wrap<DeterministicSimWorker>(worker);
+    }
+    return this.instance!;
+  }
+}
 ```
 
 ---

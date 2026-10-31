@@ -16,7 +16,7 @@ Finalize the isomorphic deployment packaging, containerization, serverless edge 
 
 ### Core Deliverables
 1. **Containerized Local Deployment (`Dockerfile`, `docker-compose.yml`)**:
-   - Multi-stage Node.js 22 Alpine build producing lightweight, production-ready standalone output.
+   - Multi-stage Node.js 24 Alpine build producing lightweight, production-ready standalone output.
    - One-command execution via `docker compose up`.
 2. **Vercel Serverless & Edge Configuration (`vercel.json`)**:
    - Configures headers for Content-Security-Policy (CSP), `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`.
@@ -35,7 +35,7 @@ Finalize the isomorphic deployment packaging, containerization, serverless edge 
 
 | File Path | Primary Class / Config | Responsibility | Est. Lines |
 | :--- | :--- | :--- | :--- |
-| `Dockerfile` | Multi-Stage Build | Node 22 Alpine builder and standalone runner | ~45 |
+| `Dockerfile` | Multi-Stage Build | Node 24 Alpine builder and standalone runner | ~45 |
 | `docker-compose.yml` | Container Compose | Orchestrates local dev and production container instances | ~35 |
 | `vercel.json` | Edge Config | Security headers, CSP, COOP/COEP for Web Workers/WASM | ~50 |
 | `src/app/api/auth/github/callback/route.ts` | `GitHubAuthEdgeHandler` | Stateless Edge route exchanging GitHub OAuth code | ~130 |
@@ -51,8 +51,8 @@ Finalize the isomorphic deployment packaging, containerization, serverless edge 
 ### Step 1: Implement Multi-Stage Production Dockerfile & Compose
 - File: `Dockerfile`
   - Multi-stage build:
-    - Stage 1 `builder`: `FROM node:22-alpine`, install dependencies (`npm ci`), run build (`npm run build`).
-    - Stage 2 `runner`: `FROM node:22-alpine`, copy standalone `.next` artifact, expose port 3000, start `node server.js`.
+    - Stage 1 `builder`: `FROM node:24-alpine`, install dependencies (`npm ci`), run build (`npm run build`).
+    - Stage 2 `runner`: `FROM node:24-alpine`, copy standalone `.next` artifact, expose port 3000, start `node server.js`.
 - File: `docker-compose.yml`
   - Defines service `ml_sys_design_2026`, passes environment variables for Google Client ID and Gemini API Key.
 
@@ -89,7 +89,7 @@ Finalize the isomorphic deployment packaging, containerization, serverless edge 
 
 ### Step 5: Implement GitHub Actions CI Workflow
 - File: `.github/workflows/ci.yml`
-  - Sets up Node.js 22 and Python 3.13.
+  - Sets up Node.js 24 and Python 3.13.
   - Runs caching for npm and uv.
   - Executes the three verification stages sequentially, blocking PR merge if any stage fails or coverage falls below 90%.
 
@@ -99,7 +99,7 @@ Finalize the isomorphic deployment packaging, containerization, serverless edge 
 
 ```typescript
 // scripts/local_ci_runner.ts
-import { execSync } from 'child_child_process' ? require('child_process') : { execSync: () => {} };
+import { execSync } from 'child_process';
 
 export class LocalCiRunner {
   // 1. Class-level constants (non-public, leading underscore)

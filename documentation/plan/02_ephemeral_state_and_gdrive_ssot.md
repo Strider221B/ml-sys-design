@@ -16,11 +16,16 @@ Implement the platform's core state architecture adhering strictly to the **Zero
 
 ### Core Deliverables
 1. **Runtime `StorageSanitizer`**: Intercepts and replaces `window.localStorage`, `window.sessionStorage`, and `window.indexedDB` with trapped no-op/throwing proxies to prevent any writes to the client disk.
-2. **Volatile RAM Zustand Store**: Modular state slices managed purely in memory without persistence middleware:
+2. **Volatile RAM Zustand 5.0 Store**: Modular state slices managed purely in memory without persistence middleware:
    - `CanvasSlice` (Nodes, Edges, Viewport)
    - `DriveSyncSlice` (Folder ID, Active File ID, ETag, Dirty Flag, Last Synced Timestamp)
    - `InterviewSlice` (Step Machine 1-6, Rubric Scores)
    - `FinOpsSlice` (Hardware allocations, target QPS, monthly budget)
+   - **Modern Zustand 5.0 & React 19.3 Capabilities**:
+     - Concurrency safety & zero-tearing via `useSyncExternalStore` for atomic reads during background calculations.
+     - Granular shallow selectors via `useShallow` (`zustand/react/shallow`) preventing redundant component re-renders.
+     - Transient telemetry subscriptions bypassing React DOM via `.subscribe(selector, callback)` to feed WebGL2/Canvas2D buffers directly at 60 FPS.
+     - Optimistic cloud sync UI indicators powered by React 19 `useOptimistic` with automatic rollback on sync failure or HTTP 412 conflict.
 3. **Google Drive REST API v3 Client (`GDriveSyncClient`)**: Authenticates via OAuth2 Bearer token, discovers or initializes the `/ML_System_Design_2026_SSOT/` directory tree, performs conditional `PATCH` requests with `If-Match` ETags.
 4. **Sync Coordinator & Conflict Engine (`SyncManager`, `ConflictResolver`)**: Debounces graph mutations (1500ms), manages in-RAM retry queues with exponential backoff (1s, 2s, 4s), and resolves HTTP 412 conflicts via 3-way vector timestamp merge.
 5. **Stateless Google OAuth PKCE Edge Route**: `/api/auth/google/callback` exchanging PKCE code for access tokens directly to browser memory.
@@ -52,10 +57,13 @@ Implement the platform's core state architecture adhering strictly to the **Zero
     - Neutralizes `window.indexedDB.open()` by returning an aborting request.
   - Method bodies strictly $\le 20$ lines (split into `_sanitizeLocalStorage()`, `_sanitizeSessionStorage()`, `_sanitizeIndexedDb()`).
 
-### Step 2: Implement In-Memory Zustand Workspace Store
+### Step 2: Implement In-Memory Zustand 5.0 Workspace Store
 - File: `src/core/state/workspace_store.ts`
 - Class: `WorkspaceStore`
-  - Encapsulates Zustand vanilla store creation without `persist` middleware.
+  - Encapsulates Zustand 5.0 vanilla store creation without `persist` middleware.
+  - Leverages React 19's `useSyncExternalStore` for tear-free atomic reads across concurrent state transitions.
+  - Exposes `useShallow` hooks for granular UI slice subscriptions (`CanvasSlice`, `InterviewSlice`, `FinOpsSlice`, `DriveSyncSlice`).
+  - Supports transient telemetry subscriptions via `getStore().subscribe(selector, callback)` bypassing React DOM reconciliation.
   - Public methods:
     - `getStore(): StoreApi<WorkspaceState>`
     - `updateCanvas(nodes: CanvasNode[], edges: CanvasEdge[]): void`

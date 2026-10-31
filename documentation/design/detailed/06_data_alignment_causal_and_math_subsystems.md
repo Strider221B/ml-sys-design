@@ -166,7 +166,7 @@ graph TD
 
 ---
 
-## 6. Implementation Code Contracts (Pyodide Worker)
+## 6. Implementation Code Contracts (Pyodide Worker with Python 3.13 & NumPy 2.0)
 
 ```python
 # src/workers/pyodide/math_sandbox.py
@@ -177,7 +177,7 @@ import numpy as np
 
 def evaluate_cuped(raw_y_control, raw_y_variant, pre_x_control, pre_x_variant):
     """
-    Computes CUPED variance reduction in Pyodide WASM.
+    Computes CUPED variance reduction in Pyodide WASM using NumPy 2.0 SIMD vectorization.
     """
     all_y = np.concatenate([raw_y_control, raw_y_variant])
     all_x = np.concatenate([pre_x_control, pre_x_variant])

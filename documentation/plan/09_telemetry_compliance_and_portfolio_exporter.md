@@ -18,6 +18,8 @@ Implement the platform's operational telemetry, legal compliance simulator, and 
 ### Core Deliverables
 1. **$60\text{ FPS}$ Visual Telemetry Profiler (`TelemetryRingBuffer`, `TelemetryProfilerRenderer`)**:
    - Decoupled from React renders via WebGL2/Canvas2D `OffscreenCanvas` and typed `Float32Array` ring buffers.
+   - Fed directly via Zustand 5.0 transient subscriptions (`getStore().subscribe(selector, callback)`) bypassing React DOM reconciliation.
+   - Embeddable within dynamic resizable canvas nodes via `@xyflow/react` `<NodeResizer>` controls.
    - Visualizes live time-series: p99 latency, TTFT, GPU memory fragmentation, and queue lag.
 2. **Log Trace Analysis Game (`LogTraceIncidentEngine`, `LogTerminalUI`)**:
    - Simulates real-world messy production crash logs: CUDA Out-Of-Memory, NCCL ring deadlocks, gRPC timeouts, and vector shard starvation.
