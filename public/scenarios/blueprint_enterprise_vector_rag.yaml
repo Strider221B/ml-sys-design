@@ -1,0 +1,56 @@
+scenarioVersion: "2026.1"
+scenarioId: "enterprise-vector-rag-2026"
+metadata:
+  title: "Enterprise Hybrid Search RAG with Speculative Decoding"
+  moduleCategory: "MODULE_2_GENAI"
+  difficulty: "STAFF_ENGINEER"
+  summary: "Build an enterprise knowledge retrieval system balancing vector search, prompt caching, and hallucination guardrails."
+  author: "ML System Design 2026 Core Team"
+constraints:
+  targetQPS: 5000
+  maxP99LatencyMs: 220
+  maxMonthlyBudgetUSD: 24000
+  complianceRegimes: ["EU_AI_ACT", "GDPR_RTBF"]
+initialCanvasState:
+  nodes:
+    - id: "rag-api"
+      type: "INFERENCE_GATEWAY"
+      config: { rateLimitQPS: 8000, timeoutMs: 500 }
+    - id: "hybrid-search"
+      type: "HYBRID_RETRIEVER"
+      config: { vectorIndex: "HNSW", sparseIndex: "BM25", rrfK: 60 }
+    - id: "cross-reranker"
+      type: "CROSS_ENCODER_RERANKER"
+      config: { model: "bge-reranker-large", topK: 10 }
+    - id: "vllm-cluster"
+      type: "VLLM_CLUSTER"
+      config: { gpuSku: "NVIDIA_H200_SXM", count: 8, speculativeDecoding: true, promptCaching: true }
+    - id: "groundedness-guard"
+      type: "SEMANTIC_GUARDRAIL"
+      config: { hallucinationThreshold: 0.05 }
+  edges:
+    - source: "rag-api"
+      target: "hybrid-search"
+      protocol: "GRPC"
+    - source: "hybrid-search"
+      target: "cross-reranker"
+      protocol: "GRPC"
+    - source: "cross-reranker"
+      target: "vllm-cluster"
+      protocol: "GRPC"
+    - source: "vllm-cluster"
+      target: "groundedness-guard"
+      protocol: "GRPC"
+chaosTriggers:
+  - triggerId: "prompt-cache-invalidation"
+    type: "CACHE_STAMPEDE"
+    description: "Simultaneous documentation updates trigger 90% prompt cache eviction; TTFT spikes to 1400ms."
+    injectedMetricsDelta:
+      ttftMsAdder: 1200
+      vramFragmentationRatio: 0.45
+evaluationCriteria:
+  requiredNodes: ["PROMPT_CACHE_LAYER", "CROSS_ENCODER_RERANKER", "SEMANTIC_GUARDRAIL"]
+  prohibitedNodes: ["UNINDEXED_FULL_TEXT_SCAN"]
+  maxAllowedP99Ms: 220
+  minRubricScore: 90
+

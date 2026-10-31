@@ -1,0 +1,62 @@
+scenarioVersion: "2026.1"
+scenarioId: "ecom-fashion-ranking-2026"
+metadata:
+  title: "Flash Sale Real-Time Personalized Clothing Ranking"
+  moduleCategory: "MODULE_1_MLOPS"
+  difficulty: "STAFF_ENGINEER"
+  summary: "Design a two-tower and deep cross-ranker pipeline serving 20,000 QPS during a Black Friday event."
+  author: "ML System Design 2026 Core Team"
+constraints:
+  targetQPS: 20000
+  maxP99LatencyMs: 65
+  maxMonthlyBudgetUSD: 18000
+  complianceRegimes: ["GDPR_RTBF"]
+initialCanvasState:
+  nodes:
+    - id: "gw-ingress"
+      type: "INFERENCE_GATEWAY"
+      config: { rateLimitQPS: 25000, timeoutMs: 100 }
+    - id: "kafka-clicks"
+      type: "KAFKA_STREAM"
+      config: { partitions: 32, retentionHours: 72 }
+    - id: "flink-agg"
+      type: "FLINK_STREAM_PROCESSOR"
+      config: { windowMinutes: 5, parallelism: 16 }
+    - id: "redis-online"
+      type: "FEATURE_STORE_ONLINE"
+      config: { engine: "REDIS_CLUSTER", maxMemoryGB: 128, replicationFactor: 3 }
+    - id: "two-tower-retrieval"
+      type: "RETRIEVAL_MODEL"
+      config: { candidateCount: 500, vectorDimension: 128 }
+    - id: "deep-ranker"
+      type: "TRANSFORMER_RANKER"
+      config: { gpuSku: "NVIDIA_H100_SXM", count: 4, quantization: "INT8" }
+  edges:
+    - source: "gw-ingress"
+      target: "kafka-clicks"
+      protocol: "KAFKA"
+    - source: "kafka-clicks"
+      target: "flink-agg"
+      protocol: "KAFKA"
+    - source: "flink-agg"
+      target: "redis-online"
+      protocol: "REDIS_PUBSUB"
+    - source: "redis-online"
+      target: "two-tower-retrieval"
+      protocol: "GRPC"
+    - source: "two-tower-retrieval"
+      target: "deep-ranker"
+      protocol: "GRPC"
+chaosTriggers:
+  - triggerId: "inventory-skew-01"
+    type: "TRAINING_SERVING_SKEW"
+    description: "Redis streaming backfill falls 8 minutes behind Snowflake batch lake during flash sale."
+    injectedMetricsDelta:
+      p99LatencyMsMultiplier: 2.1
+      staleRecommendationsRate: 0.38
+evaluationCriteria:
+  requiredNodes: ["DIVERSITY_RERANKER", "POINT_IN_TIME_FEATURE_JOIN"]
+  prohibitedNodes: ["BATCH_ONLY_WAREHOUSE_LOOKUP"]
+  maxAllowedP99Ms: 65
+  minRubricScore: 85
+

@@ -90,6 +90,29 @@ export class GDriveSyncClient {
   }
 
   /**
+   * Lists non-trashed file resources located in the given parent folder.
+   */
+  public async listFilesInFolder(folderId: string): Promise<GDriveFileResource[]> {
+    const query = `'${folderId}' in parents and trashed = false`;
+    return this._searchFiles(query);
+  }
+
+  /**
+   * Downloads raw text (YAML or unparsed JSON) payload of given Google Drive file.
+   */
+  public async fetchRawTextFile(fileId: string): Promise<string> {
+    const contentUrl = `${GDriveConstants.DRIVE_BASE_URL}/files/${fileId}?alt=media`;
+    const res = await this._fetchFn(contentUrl, {
+      method: 'GET',
+      headers: this._buildHeaders(),
+    });
+    if (!res.ok) {
+      await this._handleError(res, fileId);
+    }
+    return res.text();
+  }
+
+  /**
    * Commits workspace document changes conditionally or creates a new file.
    */
   public async saveWorkspace(

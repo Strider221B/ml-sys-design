@@ -330,4 +330,32 @@ describe('GDriveSyncClient', () => {
 
     expect(folderId).toBe('created_folder_id');
   });
+
+  it('test_listFilesInFolder_returnsFilesList', async () => {
+    const mockFiles = [{ id: 'file_1', name: 'schema.yaml' }];
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ files: mockFiles }),
+    });
+
+    const client = new GDriveSyncClient('dummy_token', mockFetch as unknown as typeof fetch);
+    const result = await client.listFilesInFolder('folder_abc');
+
+    expect(result).toEqual(mockFiles);
+    expect(mockFetch.mock.calls[0]?.[0]).toContain('/files?q=');
+  });
+
+  it('test_fetchRawTextFile_returnsTextContent', async () => {
+    const rawYaml = 'title: Test YAML';
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      text: async () => rawYaml,
+    });
+
+    const client = new GDriveSyncClient('dummy_token', mockFetch as unknown as typeof fetch);
+    const text = await client.fetchRawTextFile('file_xyz');
+
+    expect(text).toBe(rawYaml);
+    expect(mockFetch.mock.calls[0]?.[0]).toContain('/files/file_xyz?alt=media');
+  });
 });

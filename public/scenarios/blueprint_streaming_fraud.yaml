@@ -1,0 +1,44 @@
+scenarioVersion: "2026.1"
+scenarioId: "streaming-fraud-detection-2026"
+metadata:
+  title: "Sub-20ms Real-Time Financial Fraud Detection"
+  moduleCategory: "MODULE_3_PRODUCTION_METRICS"
+  difficulty: "PRINCIPAL"
+  summary: "Architect a sub-20ms transaction scoring engine executing sliding window velocity rules and GBDT inference."
+  author: "ML System Design 2026 Core Team"
+constraints:
+  targetQPS: 50000
+  maxP99LatencyMs: 20
+  maxMonthlyBudgetUSD: 30000
+  complianceRegimes: ["EU_AI_ACT", "SOC2"]
+initialCanvasState:
+  nodes:
+    - id: "tx-gateway"
+      type: "INFERENCE_GATEWAY"
+      config: { rateLimitQPS: 60000, timeoutMs: 25 }
+    - id: "aerospike-features"
+      type: "FEATURE_STORE_ONLINE"
+      config: { engine: "AEROSPIKE", readLatencyP99Ms: 1.2 }
+    - id: "xgboost-cluster"
+      type: "GBDT_INFERENCE_CLUSTER"
+      config: { cpuCores: 128, treeCount: 500, maxDepth: 8 }
+  edges:
+    - source: "tx-gateway"
+      target: "aerospike-features"
+      protocol: "GRPC"
+    - source: "aerospike-features"
+      target: "xgboost-cluster"
+      protocol: "GRPC"
+chaosTriggers:
+  - triggerId: "covariate-drift-burst"
+    type: "COVARIATE_DRIFT"
+    description: "Fraudsters launch coordinated micro-transactions under $2 across 10,000 new merchant accounts."
+    injectedMetricsDelta:
+      psiMetricScore: 0.42
+      falsePositiveRateSpike: 0.15
+evaluationCriteria:
+  requiredNodes: ["PSI_DRIFT_DETECTOR", "FALLBACK_HEURISTIC_RULE_ENGINE"]
+  prohibitedNodes: ["SYNCHRONOUS_COLD_DATABASE_QUERY"]
+  maxAllowedP99Ms: 20
+  minRubricScore: 90
+
