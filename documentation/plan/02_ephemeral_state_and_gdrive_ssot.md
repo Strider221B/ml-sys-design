@@ -176,7 +176,7 @@ export class StorageSanitizer {
 - `tests/core/gdrive/test_gdrive_sync_client.test.ts`: Mocks `fetch` to verify folder creation, GET, conditional PATCH, and error handling.
 - `tests/core/gdrive/test_sync_manager.test.ts`: Tests 1500ms debounce timer, retry backoff, and dirty queue in RAM.
 - `tests/core/gdrive/test_conflict_resolver.test.ts`: Tests 3-way merge on HTTP 412 conflicts.
-- `tests/app/api/auth/test_google_auth_edge_handler.test.ts`: Tests PKCE token exchange handler.
+- `tests/core/gdrive/test_google_auth_client.test.ts`: Tests Google Identity Services token client initialization, popup dispatch, and token receipt.
 
 ### Coverage & Quality Gates
 - **$\ge 90\%$ branch and line coverage**.

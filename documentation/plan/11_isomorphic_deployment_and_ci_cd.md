@@ -24,6 +24,7 @@ Finalize the isomorphic deployment packaging, containerization, serverless edge 
 3. **Stateless Edge Handlers**:
    - `/api/auth/github/callback`: Stateless GitHub OAuth broker for portfolio publishing.
    - `/api/gemini/proxy`: Optional token-bucket edge proxy sanitizing and forwarding requests to the Gemini Free Tier API.
+   - *(Note: Google Drive uses the client-side Google Identity Services (GIS) token model directly from the browser; no `/api/auth/google/callback` route or client secret is required).*
 4. **Automated CI/CD Quality Pipeline (`.github/workflows/ci.yml`)**:
    - Mirrors mandatory local CI stages across linting, type-checking, and test coverage thresholds ($\ge 90\%$).
 5. **Local CI Run Script (`scripts/run_local_ci.sh`)**:
