@@ -22,3 +22,12 @@ source ~/python_envs/p313_llm/bin/activate
 
 ### PR Text:
 based on the changes you have made can you create a detailed PR description on what changed and why. Post the description on chat
+
+### Plan update
+Design documents have been updated. Create a new plan document to handle the deltas. Don't update existing plan documents.
+
+Design documents:
+./documentation/design/detailed
+
+Plan documents:
+./documentation/plan
