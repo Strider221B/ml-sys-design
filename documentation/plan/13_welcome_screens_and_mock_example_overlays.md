@@ -1,7 +1,7 @@
 # Plan 13: Global Welcome Screen & Component Mock Example Overlays
 
 > **Phase:** 13 (First-Time Onboarding & Mock Example Walkthroughs)  
-> **Status:** Pending Execution  
+> **Status:** Completed  
 > **Design References:**  
 > - [00_overview_and_architecture.md](file:///home/somesh/git_repos/ml-sys-design/documentation/design/detailed/00_overview_and_architecture.md) (Section 3.3.1)  
 > - [04_canvas_and_ui_component_system.md](file:///home/somesh/git_repos/ml-sys-design/documentation/design/detailed/04_canvas_and_ui_component_system.md) (Section 5.4, 5.5, 5.6)  
@@ -268,15 +268,15 @@ npm run validate:py
 
 ## 6. Execution Checklist
 
-- [ ] Define welcome types and action payload contracts in `src/core/state/welcome_types.ts`.
-- [ ] Implement `WelcomeConstants` in `src/components/welcome/welcome_constants.ts`.
-- [ ] Implement `MockWalkthroughCatalog` in `src/components/welcome/mock_walkthrough_catalog.ts`.
-- [ ] Implement `GuidancePreferenceManager` in `src/core/state/guidance_preference_manager.ts`.
-- [ ] Implement `MockActionDispatcher` in `src/components/welcome/mock_action_dispatcher.ts`.
-- [ ] Implement `AppWelcomeModal` in `src/components/welcome/app_welcome_modal.tsx`.
-- [ ] Implement `ComponentWelcomeOverlay` in `src/components/welcome/component_welcome_overlay.tsx`.
-- [ ] Add `(?) Show Mock Example` button to screen toolbars and integrate `ComponentWelcomeOverlay` across all 6 workspace views.
-- [ ] Integrate `AppWelcomeModal` into `src/app/page.tsx` with first-time launch detection.
-- [ ] Write all 5 comprehensive test suites ensuring $\ge 90\%$ branch coverage.
-- [ ] Run `npm run typecheck`, `npm test`, `npm run validate:ts`, and `npm run validate:py` to confirm zero errors.
+- [x] Define welcome types and action payload contracts in `src/core/state/welcome_types.ts`.
+- [x] Implement `WelcomeConstants` in `src/components/welcome/welcome_constants.ts`.
+- [x] Implement `MockWalkthroughCatalog` in `src/components/welcome/mock_walkthrough_catalog.ts`.
+- [x] Implement `GuidancePreferenceManager` in `src/core/state/guidance_preference_manager.ts`.
+- [x] Implement `MockActionDispatcher` in `src/components/welcome/mock_action_dispatcher.ts`.
+- [x] Implement `AppWelcomeModal` in `src/components/welcome/app_welcome_modal.tsx`.
+- [x] Implement `ComponentWelcomeOverlay` in `src/components/welcome/component_welcome_overlay.tsx`.
+- [x] Add `(?) Show Mock Example` button to screen toolbars and integrate `ComponentWelcomeOverlay` across all 6 workspace views.
+- [x] Integrate `AppWelcomeModal` into `src/app/page.tsx` with first-time launch detection.
+- [x] Write all 5 comprehensive test suites ensuring $\ge 90\%$ branch coverage.
+- [x] Run `npm run typecheck`, `npm test`, `npm run validate:ts`, and `npm run validate:py` to confirm zero errors.
 

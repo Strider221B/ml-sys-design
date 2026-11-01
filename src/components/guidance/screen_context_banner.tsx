@@ -12,6 +12,7 @@ export interface ScreenContextBannerProps {
   catalog?: WorkspaceGuidanceCatalog | undefined;
   onQuickAction?: ((action: QuickActionDescriptor) => void) | undefined;
   defaultCollapsed?: boolean | undefined;
+  onShowMockExample?: (() => void) | undefined;
 }
 
 export interface ScreenContextBannerState {
@@ -66,8 +67,25 @@ export class ScreenContextBanner extends React.Component<
             {guidance.badge}
           </span>
         </div>
-        {this._renderCollapseToggle()}
+        <div className="flex items-center gap-2">
+          {this._renderMockExampleButton()}
+          {this._renderCollapseToggle()}
+        </div>
       </div>
+    );
+  }
+
+  private _renderMockExampleButton(): React.ReactNode {
+    if (!this.props.onShowMockExample) return null;
+    return (
+      <button
+        type="button"
+        onClick={this.props.onShowMockExample}
+        className="text-[11px] text-cyan-400 hover:text-cyan-300 font-mono transition px-2 py-0.5 rounded bg-cyan-950/60 hover:bg-cyan-900 border border-cyan-800"
+        aria-label="(?) Show Mock Example"
+      >
+        (?) Show Mock Example
+      </button>
     );
   }
 

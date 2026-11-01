@@ -12,9 +12,12 @@ import { ScreenContextBanner } from '@/components/guidance/screen_context_banner
 import { InterviewWorkspace } from '@/components/interview/interview_workspace';
 import { ExportType, HeaderDeck } from '@/components/navigation/header_deck';
 import { TelemetryDashboard } from '@/components/telemetry/telemetry_dashboard';
+import { AppWelcomeModal } from '@/components/welcome/app_welcome_modal';
+import { ComponentWelcomeOverlay } from '@/components/welcome/component_welcome_overlay';
 import { KubernetesManifestExporter } from '@/core/exporters/kubernetes_manifest_exporter';
 import { ProductionManifestoGenerator } from '@/core/exporters/production_manifesto_generator';
 import { TerraformHclExporter } from '@/core/exporters/terraform_hcl_exporter';
+import { GuidancePreferenceManager } from '@/core/state/guidance_preference_manager';
 import {
   InspectorNodeData,
   QuickActionDescriptor,
@@ -31,6 +34,8 @@ export interface PageState {
   isAiModalOpen: boolean;
   isExportModalOpen: boolean;
   isHelpModalOpen: boolean;
+  isAppWelcomeOpen: boolean;
+  isComponentWelcomeOpen: boolean;
   selectedNode: InspectorNodeData | null;
   exportType: ExportType;
   exportedCode: string;
@@ -54,6 +59,7 @@ export class Page extends React.Component<PageProps, PageState> {
   public constructor(props: PageProps) {
     super(props);
     this._store = new WorkspaceStore();
+    this._guidanceManager = new GuidancePreferenceManager(undefined, this._store);
     this._tfExporter = new TerraformHclExporter();
     this._k8sExporter = new KubernetesManifestExporter();
     this._manifestoGen = new ProductionManifestoGenerator();
@@ -62,6 +68,8 @@ export class Page extends React.Component<PageProps, PageState> {
       isAiModalOpen: false,
       isExportModalOpen: false,
       isHelpModalOpen: false,
+      isAppWelcomeOpen: this._guidanceManager.shouldShowAppWelcome(),
+      isComponentWelcomeOpen: this._guidanceManager.shouldShowComponentWelcome(Page._TAB_CANVAS),
       selectedNode: null,
       exportType: 'TERRAFORM',
       exportedCode: '',
@@ -90,12 +98,13 @@ export class Page extends React.Component<PageProps, PageState> {
           onTabSelect={(tab) => this._handleTabSelect(tab)}
           onOpenAiModal={() => this.setState({ isAiModalOpen: true })}
           onOpenExportModal={(type) => this._handleExportClick(type)}
-          onOpenHelpModal={() => this.setState({ isHelpModalOpen: true })}
+          onOpenHelpModal={() => this.setState({ isAppWelcomeOpen: true })}
           store={this._store}
         />
         <ScreenContextBanner
           activeTab={this.state.activeTab}
           onQuickAction={this._handleQuickAction}
+          onShowMockExample={() => this.setState({ isComponentWelcomeOpen: true })}
         />
       </>
     );
@@ -103,22 +112,40 @@ export class Page extends React.Component<PageProps, PageState> {
 
   private _renderMainContent(): React.ReactNode {
     return (
-      <div className="flex-1 overflow-auto relative">
-        {this._renderActiveTabContent()}
-        <NodeInspectorDrawer
-          isOpen={Boolean(this.state.selectedNode)}
-          selectedNode={this.state.selectedNode}
-          onClose={() => this.setState({ selectedNode: null })}
-          onUpdateNode={this._handleUpdateInspectorNode}
-          onDuplicateNode={this._handleDuplicateNode}
-          onDisconnectEdges={this._handleDisconnectNode}
-          onDeleteNode={this._handleDeleteInspectorNode}
+      <div className="flex-1 overflow-auto relative flex flex-col">
+        <ComponentWelcomeOverlay
+          isOpen={this.state.isComponentWelcomeOpen}
+          tabId={this.state.activeTab}
+          store={this._store}
+          onClose={(dontShowAgain) => {
+            this._guidanceManager.dismissComponentWelcome(this.state.activeTab, dontShowAgain);
+            this.setState({ isComponentWelcomeOpen: false });
+          }}
         />
+        <div className="flex-1 overflow-auto relative">
+          {this._renderActiveTabContent()}
+          {this._renderNodeInspector()}
+        </div>
       </div>
     );
   }
 
+  private _renderNodeInspector(): React.ReactNode {
+    return (
+      <NodeInspectorDrawer
+        isOpen={Boolean(this.state.selectedNode)}
+        selectedNode={this.state.selectedNode}
+        onClose={() => this.setState({ selectedNode: null })}
+        onUpdateNode={this._handleUpdateInspectorNode}
+        onDuplicateNode={this._handleDuplicateNode}
+        onDisconnectEdges={this._handleDisconnectNode}
+        onDeleteNode={this._handleDeleteInspectorNode}
+      />
+    );
+  }
+
   private readonly _store: WorkspaceStore;
+  private readonly _guidanceManager: GuidancePreferenceManager;
   private readonly _tfExporter: TerraformHclExporter;
   private readonly _k8sExporter: KubernetesManifestExporter;
   private readonly _manifestoGen: ProductionManifestoGenerator;
@@ -137,7 +164,10 @@ export class Page extends React.Component<PageProps, PageState> {
   }
 
   private _handleTabSelect(tab: WorkspaceTab): void {
-    this.setState({ activeTab: tab });
+    this.setState({
+      activeTab: tab,
+      isComponentWelcomeOpen: this._guidanceManager.shouldShowComponentWelcome(tab),
+    });
   }
 
   private _handleExportClick(type: ExportType): void {
@@ -225,11 +255,27 @@ export class Page extends React.Component<PageProps, PageState> {
           onClose={() => this.setState({ isAiModalOpen: false })}
           onImportSuccess={() => this.setState({ isAiModalOpen: false })}
         />
+        {this._renderWelcomeModals()}
+        {this._renderExportModal()}
+      </>
+    );
+  }
+
+  private _renderWelcomeModals(): React.ReactNode {
+    return (
+      <>
+        <AppWelcomeModal
+          isOpen={this.state.isAppWelcomeOpen}
+          onClose={(dontShowAgain) => {
+            this._guidanceManager.dismissAppWelcome(dontShowAgain);
+            this.setState({ isAppWelcomeOpen: false });
+          }}
+          onTakeTour={() => this.setState({ isHelpModalOpen: true })}
+        />
         <PlatformOnboardingModal
           isOpen={this.state.isHelpModalOpen}
           onClose={() => this.setState({ isHelpModalOpen: false })}
         />
-        {this._renderExportModal()}
       </>
     );
   }

@@ -22,8 +22,8 @@ describe('Page Root Workspace', () => {
   it('test_render_displaysHeaderGuidanceAndCanvasByDefault', () => {
     render(Page.renderPage());
 
-    expect(screen.getByText('2026 Machine Learning System Design Platform')).toBeDefined();
-    expect(screen.getByText('Architecture Canvas')).toBeDefined();
+    expect(screen.getAllByText('2026 Machine Learning System Design Platform')[0]).toBeDefined();
+    expect(screen.getAllByText('Architecture Canvas')[0]).toBeDefined();
     expect(screen.getByText('Add Components')).toBeDefined();
   });
 
@@ -32,11 +32,11 @@ describe('Page Root Workspace', () => {
 
     // Switch to Interview
     fireEvent.click(screen.getByText('🎙️ AI Interview'));
-    expect(screen.getByText('AI Interview Simulator')).toBeDefined();
+    expect(screen.getAllByText('AI Interview Simulator')[0]).toBeDefined();
 
     // Switch to Chaos
     fireEvent.click(screen.getByText('⚡ Chaos Sandbox'));
-    expect(screen.getByText('Chaos Sandbox')).toBeDefined();
+    expect(screen.getAllByText('Chaos Sandbox')[0]).toBeDefined();
 
     // Switch to Curriculum
     fireEvent.click(screen.getByText('📚 Curriculum'));
@@ -57,7 +57,7 @@ describe('Page Root Workspace', () => {
     // Trigger interview quick action from Canvas banner
     const interviewActionBtn = screen.getByText('Load Hybrid Search RAG');
     fireEvent.click(interviewActionBtn);
-    expect(screen.getByText('Architecture Canvas')).toBeDefined();
+    expect(screen.getAllByText('Architecture Canvas')[0]).toBeDefined();
   });
 
   it('test_modals_opensAndClosesHelpAndExportModals', async () => {
@@ -66,6 +66,8 @@ describe('Page Root Workspace', () => {
     // Open Help modal
     const helpBtn = screen.getByLabelText(/Help & Guide/i);
     fireEvent.click(helpBtn);
+    const tourBtn = screen.getByText('Take Interactive Tour');
+    fireEvent.click(tourBtn);
     expect(screen.getByText('Platform Onboarding & Guide')).toBeDefined();
 
     // Close Help modal

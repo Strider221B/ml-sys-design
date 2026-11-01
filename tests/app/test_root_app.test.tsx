@@ -25,8 +25,8 @@ describe('RootAppComponents', () => {
 
   it('test_Page_rendersHeaderAndBrand', () => {
     render(<Page />);
-    expect(screen.getByText('2026 Machine Learning System Design Platform')).toBeDefined();
-    expect(screen.getByText(/Deterministic interactive simulation/i)).toBeDefined();
+    expect(screen.getAllByText('2026 Machine Learning System Design Platform')[0]).toBeDefined();
+    expect(screen.getAllByText(/Deterministic interactive simulation/i)[0]).toBeDefined();
     expect(screen.getByText('RAM-Only SSOT')).toBeDefined();
   });
 
