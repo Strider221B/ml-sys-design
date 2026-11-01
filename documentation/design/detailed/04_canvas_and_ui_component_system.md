@@ -318,6 +318,195 @@ An interactive 4-slide tour triggered on the user's first visit or whenever clic
 
 ---
 
+### 5.4 Global Application Welcome Screen (`AppWelcomeModal`)
+
+To ensure newcomers immediately grasp the platform's vision, a dedicated **Application Welcome Screen** automatically appears when the application initializes (if not previously dismissed in the active session).
+
+```mermaid
+graph TD
+    AppLaunch["User Navigates to Platform (localhost:3000 or production URL)"] --> CheckPref{"userPreferences.hasSeenAppWelcome == false?"}
+    CheckPref -->|Yes| ShowWelcome["Display AppWelcomeModal\n(Hero Overview + 3 Pillars + 6 Workspaces)"]
+    CheckPref -->|No| LoadActiveWorkspace["Directly Mount Active Workspace (Canvas)"]
+    
+    ShowWelcome --> UserChoice{"User Action"}
+    UserChoice -->|"Take Interactive Tour"| LaunchTour["Open Step-by-Step Walkthrough Slides"]
+    UserChoice -->|"Skip to Canvas"| DismissWelcome["Dismiss Modal & Set hasSeenAppWelcome = true in RAM"]
+    UserChoice -->|"Don't Show Again"| RememberDismiss["Persist Dismissal in Session RAM Preferences"]
+    
+    LaunchTour --> DismissWelcome
+    RememberDismiss --> LoadActiveWorkspace
+    DismissWelcome --> LoadActiveWorkspace
+```
+
+#### 5.4.1 Layout & Visual Presentation
+The modal is centered with a dark semi-transparent backdrop (`bg-slate-950/80 backdrop-blur-sm`):
+1. **Hero Header**:
+   - Platform Identity: *"2026 Machine Learning System Design Platform"*
+   - Subtitle: *"Deterministic Interactive Simulation, Real-Time Observability & AI Interview Preparation Engine."*
+2. **The 3 Architectural Pillars**:
+   - **Deterministic Simulation**: Real ML systems modeling ($M/G/c$ queuing theory, Roofline compute bounds, p99 latencies, TTFT/TPOT), not static whiteboard diagrams.
+   - **Zero Local Persistence & Google Drive SSOT**: Strictly zero local storage or cookies. Connect your Google Drive in 1 click to auto-save to your private `/ML_System_Design_2026_SSOT/` directory.
+   - **Dual-Mode AI Engine**: Direct Gemini Free Tier streaming API with instant failover to air-gapped manual prompt export (copy-paste into Google AI Studio or ChatGPT with zero API keys required).
+3. **Primary Action Controls**:
+   - **"Take the 2-Minute Tour"** (Primary Cyan CTA): Advances to interactive slide walkthrough.
+   - **"Skip Tour & Start Building"** (Secondary Neutral CTA): Immediately closes the modal and focuses on the Canvas.
+   - **"Don't show this welcome screen again"** Checkbox: Updates in-memory session preferences to suppress future launches.
+   - Re-openable at any time via the persistent **`[?] Help & Guide`** button in the global navigation bar.
+
+---
+
+### 5.5 Component-Specific Welcome Overlays with Concrete Mock Examples (`ComponentWelcomeOverlay`)
+
+In addition to the global application welcome, each of the 6 workspace tabs features a dedicated **Component Welcome Card / Overlay**. This card delivers an immediate, concrete **mock example walkthrough** showing users exactly what inputs to provide, what actions to execute, and what simulation outputs to expect.
+
+```mermaid
+graph LR
+    TabSelected["User Swaps to Workspace Tab\n(e.g., Canvas, Interview, Chaos, FinOps)"] --> CheckDismissed{"Component Welcome Dismissed in RAM?"}
+    CheckDismissed -->|No| RenderOverlay["Render ComponentWelcomeOverlay\n(Title + Mental Model + Concrete Mock Example Walkthrough)"]
+    CheckDismissed -->|Yes| RenderWorkspace["Render Standard Workspace Interface"]
+    
+    RenderOverlay --> Actions{"User Action"}
+    Actions -->|"Load Mock Example (1-Click)"| Prepopulate["Inject Mock Parameters & Topology into RAM"]
+    Actions -->|"Dismiss / Skip"| Dismiss["Collapse Overlay & Set dismissedComponentWelcomes[tabId] = true"]
+    Actions -->|"Re-open Later"| Reopen["Toggle via '(?) Show Mock Example' Header Button"]
+```
+
+#### 5.5.1 Architecture Canvas Welcome & Mock Example
+- **Component Title**: *"Architecture Canvas: Visual Systems Modeling & Latency Simulation"*
+- **Mental Model**: Design distributed ML topologies with custom hardware nodes and wire connections. Every connection calculates network serialization latency, bandwidth saturation, and queue delays in real time.
+- **Concrete Mock Example Walkthrough**:
+  - **Scenario**: *Enterprise Hybrid Search Retrieval-Augmented Generation (RAG)*
+  - **Step 1 (Ingress)**: Place a `Query Ingress Gateway` node configured with a 5,000 QPS rate limit and 200ms client timeout.
+  - **Step 2 (Retrieval)**: Connect the gateway outputs to two parallel retrieval nodes:
+    - `Dense Vector DB (HNSW)`: 1536-dimensional embeddings, Cosine distance, 4 shards.
+    - `Sparse BM25 Index (Elasticsearch)`: Online read latency $1.2\text{ ms}$, TTL 86,400s.
+  - **Step 3 (Inference)**: Wire both retrieval outputs into a `vLLM Serving Cluster` hosting Llama-3-70B with 4x NVIDIA H100 GPUs and INT4 AWQ quantization.
+  - **Simulated Output & What to Expect**:
+    - Observe the wire latency badges displaying `gRPC (0.3ms)` and `1.2ms online read`.
+    - The vLLM cluster calculates `TTFT: 68ms` and `TPOT: 12.4ms/tok` with overall graph health flagged as `OPTIMAL` (green).
+    - If you lower the GPU count to 1x H100, watch the node flash vermilion (`OVERLOAD`) with p99 latency exploding to $420\text{ ms}$.
+- **Interactive Action Buttons**:
+  - **"Load This Mock RAG Example"** (1-Click): Instantly populates the active canvas with this complete verified topology.
+  - **"Skip Guide & Start Blank"**: Dismisses the overlay to reveal a clean workspace.
+
+#### 5.5.2 AI Interview Simulator Welcome & Mock Example
+- **Component Title**: *"AI Interview Simulator: Structured 6-Step FAANG Defense"*
+- **Mental Model**: Practice realistic machine learning system design interviews against an AI interviewer graded on Staff and Principal engineer evaluation rubrics.
+- **Concrete Mock Example Walkthrough**:
+  - **Scenario**: *Design the YouTube Video Recommendation Engine (2B DAU)*
+  - **Step 1 (Clarifying Requirements)**:
+    - *Example Prompt*: Ask the interviewer about scale and constraints: *"What is the daily active user count, peak video upload volume, and maximum acceptable p99 recommendation latency?"*
+    - *Expected Feedback*: AI interviewer confirms 2B DAU, 500 hours uploaded/minute, and $p99 < 50\text{ ms}$.
+  - **Step 2 (High-Level Architecture)**:
+    - *Action*: Propose a two-stage pipeline: Candidate Generation (retrieving top 1,000 videos from millions via two-tower embeddings) followed by Deep Ranking (multi-task cross-encoder with engagement & satisfaction loss heads).
+    - *Canvas Sync*: Click **"Load Canvas into Answer"** to automatically serialize your active architecture canvas into the answer text.
+  - **Step 3 (Rubric Evaluation)**:
+    - *Action*: Click **"Submit for Evaluation"**.
+    - *Expected Feedback*: The AI interviewer evaluates your submission against the 5-point rubric:
+      - *System Correctness*: 5/5
+      - *Scale & Latency*: 4.5/5
+      - *Trade-off Justification*: 4.5/5
+      - *Probing Counter-Question*: *"How would you handle the cold-start problem for newly uploaded videos with zero view history?"*
+- **Interactive Action Buttons**:
+  - **"Load Mock Interview Transcript"**: Pre-fills Step 1 and Step 2 sample answers for immediate inspection.
+  - **"Skip Guide & Start Step 1"**: Closes overlay and begins a blank interview session.
+
+#### 5.5.3 Chaos Sandbox Welcome & Mock Example
+- **Component Title**: *"Chaos Sandbox: Adversarial Stress-Testing & Fault Injection"*
+- **Mental Model**: Expose architectural blind spots, single-points-of-failure, and cascading collapses by subjecting your system to realistic production outages.
+- **Concrete Mock Example Walkthrough**:
+  - **Scenario**: *Mitigating a 10x Poisson Traffic Burst & Worker OOM Collapse*
+  - **Step 1 (Baseline Check)**: Observe the system handling normal traffic: 1,200 QPS with healthy queues ($<15\%$ utilization).
+  - **Step 2 (Fault Injection)**:
+    - *Action*: Select the **"10x Poisson Traffic Burst"** attack vector and click **"Inject Fault"**.
+    - *Expected Cascade*: Traffic surges from 1,200 QPS to 12,000 QPS.
+    - *Visual Impact*: Ingress Gateway queue depth reaches $100\%$, triggering packet drops ($42\%$ error rate). Downstream vLLM nodes exhaust GPU KV-cache memory, turning vermilion (`OVERLOAD`) with p99 latency spiking to $1,850\text{ ms}$.
+  - **Step 3 (Architectural Mitigation)**:
+    - *Action*: Return to Canvas. Add a `Semantic Guardrail` rate limiter node at ingress, configure a `Prompt Cache` node, and increase vLLM worker replicas from 4 to 8.
+    - *Action*: Click **"Re-Test Mitigation"**.
+    - *Expected Resolution*: Ingress rate limiting sheds non-critical requests; Prompt Cache absorbs $65\%$ of repetitive queries; error rate drops to $0.01\%$; resilience gate passes.
+- **Interactive Action Buttons**:
+  - **"Load Mock Chaos Scenario"**: Sets up the bursting traffic attack on a sample vulnerable architecture.
+  - **"Skip Guide & Run Custom Attack"**: Closes overlay to access custom chaos controls.
+
+#### 5.5.4 Curriculum Explorer Welcome & Mock Example
+- **Component Title**: *"Curriculum Explorer: 13 Production Case Studies & Challenges"*
+- **Mental Model**: A structured curriculum covering end-to-end production architectures from Netflix-scale recommendations to real-time financial fraud classification.
+- **Concrete Mock Example Walkthrough**:
+  - **Scenario**: *Solving Challenge #03: "Real-Time 10M QPS Fraud Detection Engine"*
+  - **Step 1 (Browse & Filter)**: Filter catalog by domain: *"Streaming / Real-Time"*. Select Challenge #03.
+  - **Step 2 (Review Challenge Constraints)**:
+    - Ingress Scale: $10,000,000\text{ QPS}$ peak streaming transaction volume.
+    - Latency SLA: Hard $p99 < 15\text{ ms}$ before bank card authorization timeout.
+    - Model Target: XGBoost / LightGBM ensemble combined with an online GNN graph neural network for card-merchant ring detection.
+  - **Step 3 (Workspace Initialization)**:
+    - *Action*: Click **"Load Challenge into Workspace"**.
+    - *Expected Result*: Automatically initializes the Canvas with the starter topology (Kafka ingress stream, Feast online feature store with Redis backend, ONNX runtime serving cluster) and loads pre-configured unit test suites into memory.
+- **Interactive Action Buttons**:
+  - **"Load Challenge #03 Now"**: Directly opens Challenge #03 in the Canvas workspace.
+  - **"Skip Guide & Browse Catalog"**: Closes overlay to browse all 13 modules freely.
+
+#### 5.5.5 Real-Time Telemetry & Profiler Welcome & Mock Example
+- **Component Title**: *"Real-Time Telemetry: 60 FPS Observability & Profiler Console"*
+- **Mental Model**: High-frequency hardware and request profiler rendering latency waterfalls, attention head fragmentation, and queue dynamics without DOM overhead.
+- **Concrete Mock Example Walkthrough**:
+  - **Scenario**: *Diagnosing Time-To-First-Token (TTFT) Latency Explosion*
+  - **Step 1 (Traffic Sweep)**: Drag the Ingress Traffic Slider from 1,000 QPS to 8,000 QPS.
+  - **Step 2 (Analyze Waterfall Chart)**:
+    - Observe the request lifecycle waterfall: Network ($4\text{ ms}$) $\to$ Ingress ($1.5\text{ ms}$) $\to$ Retrieval ($8.2\text{ ms}$) $\to$ LLM Prefill TTFT ($142\text{ ms}$) $\to$ Autoregressive Decode TPOT ($12.4\text{ ms/tok}$).
+    - The profiler highlights TTFT in orange/red as the dominant bottleneck ($>80\%$ of total latency).
+  - **Step 3 (VRAM & KV-Cache Heatmap)**:
+    - Inspect the memory chunk visualizer: $68\%$ of allocated KV-cache blocks are non-contiguous, indicating severe memory fragmentation.
+    - *Remediation*: Enabling `PagedAttention` eliminates fragmentation holes, cutting TTFT from $142\text{ ms}$ to $31\text{ ms}$.
+- **Interactive Action Buttons**:
+  - **"Simulate This Telemetry Spike"**: Drives live 60 FPS synthetic metrics exhibiting this exact bottleneck.
+  - **"Skip Guide & View Live Profiler"**: Closes overlay to inspect active system metrics.
+
+#### 5.5.6 FinOps Workspace Welcome & Mock Example
+- **Component Title**: *"FinOps Workspace: Hardware Sizing & Cloud Cost Modeling"*
+- **Mental Model**: Translate algorithmic architectures into concrete compute requirements (NVIDIA H100 vs. A100 vs. TPU v5e), monthly cloud hosting bills, and Pareto cost-latency trade-offs.
+- **Concrete Mock Example Walkthrough**:
+  - **Scenario**: *Sizing a 50,000 QPS Llama-3-70B Production Inference Cluster*
+  - **Step 1 (Workload Parameters)**:
+    - Target QPS: $50,000\text{ requests/sec}$.
+    - Average Input Tokens: $512\text{ tokens}$.
+    - Average Output Tokens: $128\text{ tokens}$.
+    - Latency SLA: $p99 \le 80\text{ ms}$.
+  - **Step 2 (Compare Hardware Configurations)**:
+    - *Configuration A (Standard Precision)*: 64x NVIDIA A100 80GB GPUs with FP16 weights.
+      - Monthly Cost: $\$76,800/\text{mo}$.
+      - Throughput: $51,200\text{ QPS}$.
+    - *Configuration B (Quantized + Speculative Decoding)*: 16x NVIDIA H100 SXM5 GPUs with INT4 AWQ quantization and a 1.2B draft model.
+      - Monthly Cost: $\$22,400/\text{mo}$.
+      - Throughput: $54,800\text{ QPS}$.
+  - **Step 3 (Review Cost Savings & Export)**:
+    - Configuration B satisfies the 80ms SLA while reducing monthly infrastructure expenditure by $\$54,400/\text{mo}$ (a $71\%$ cost reduction).
+    - Click **"Export Cost Breakdown"** to generate a Markdown/CSV report ready for executive review.
+- **Interactive Action Buttons**:
+  - **"Load Mock FinOps Sizing"**: Injects these exact workload parameters into the FinOps calculator.
+  - **"Skip Guide & Open Calculator"**: Closes overlay to input custom parameters.
+
+---
+
+### 5.6 Skip, Dismiss & Preference Persistence Architecture
+
+Both the Global Application Welcome Screen and the Component Welcome Overlays follow strict non-intrusive UX principles:
+
+1. **Explicit Skip Buttons**: Every welcome screen contains a high-visibility **"Skip Guide"** or **"Dismiss"** CTA, allowing experienced engineers to jump immediately into the tool.
+2. **"Don't Show Again" Checkbox**: Checking this option records dismissal in volatile browser RAM (`WorkspaceStore` user preferences):
+   ```typescript
+   interface UserGuidancePreferences {
+     hasSeenAppWelcome: boolean;
+     dismissedComponentWelcomes: Record<WorkspaceTabId, boolean>;
+   }
+   ```
+3. **Persistent Re-Trigger Controls**: If a user previously dismissed a welcome guide and later wishes to review the mock walkthrough:
+   - Global Guide: Accessible at any time via the top header button: `[?] Help & Guide`.
+   - Component Mock Example: Accessible at any time via the screen toolbar button: `(?) Show Mock Example`.
+4. **Zero Disk Storage Mandate**: In accordance with the Zero Local Storage requirement, preference flags reside exclusively in in-memory Zustand state and are optionally committed to the user's private Google Drive SSOT (`manifest.json -> userPreferences.dismissedWelcomeModals`).
+
+---
+
 ## 6. Accessibility Engine (WCAG 2.1 AA/AAA)
 
 To ensure the complex visual canvas is fully accessible to motor-impaired and visually-impaired engineers:

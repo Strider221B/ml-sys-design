@@ -156,6 +156,23 @@ flowchart LR
 5. **Financially Optimize**: User models hardware provisioning in **FinOps**, finding the Pareto frontier of GPU cost vs. latency SLA.
 6. **Defend & Persist**: User executes mock defense in **AI Interview Simulator**, and commits progress to private **Google Drive SSOT** via the header `GDriveSyncControl`.
 
+#### 3.3.1 First-Time Onboarding: Global Welcome Screen & Component Mock Walkthroughs
+
+To eliminate cognitive overload without obstructing experienced users:
+1. **Global Application Welcome Screen (`AppWelcomeModal`)**:
+   - Launches upon initial visit.
+   - Summarizes the core mission (deterministic simulation vs static drawing), the 3 pillars (Zero local storage / Google Drive SSOT, 60 FPS WebGL profiling, and Dual-Mode AI Gateway), and the 6 workspace tabs.
+   - Includes a prominent **"Skip Tour"** button and **"Don't show this again"** checkbox, with preferences preserved in session RAM.
+2. **Component-Specific Welcome Overlays (`ComponentWelcomeOverlay`)**:
+   - Each of the 6 workspace tabs features an interactive mock example walkthrough:
+     - *Canvas*: Step-by-step Hybrid Search RAG setup with a 1-click **"Load Mock RAG Example"** button.
+     - *AI Interview*: Step-by-step YouTube Recommendation Engine defense with a 1-click **"Load Mock Transcript"** button.
+     - *Chaos Sandbox*: Step-by-step 10x Poisson traffic burst attack & mitigation drill.
+     - *Curriculum Explorer*: Step-by-step walkthrough of Challenge #03 (10M QPS Fraud Detection).
+     - *Real-Time Telemetry*: Step-by-step TTFT prefill latency explosion diagnosis and PagedAttention resolution.
+     - *FinOps Workspace*: Step-by-step Llama-3-70B cluster sizing (INT4 AWQ vs FP16 cost savings).
+   - Can be dismissed immediately with **"Skip Guide & Start Blank"**, and toggled back at any time via the screen header button: `(?) Show Mock Example`.
+
 ---
 
 ## 4. Module Decomposition & Responsibility Matrix
